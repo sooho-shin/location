@@ -1,6 +1,14 @@
-'use client'
+"use client";
 
-import styled from 'styled-components';
+import styled from "styled-components";
+
+export default function Home() {
+  return (
+    <Main>
+      <Title>Welcome to LOCATION</Title>
+    </Main>
+  );
+}
 
 const Main = styled.main`
   display: flex;
@@ -14,11 +22,3 @@ const Title = styled.h1`
   font-size: 4rem;
   color: #333;
 `;
-
-export default function Home() {
-  return (
-    <Main>
-      <Title>Welcome to LOCATION</Title>
-    </Main>
-  );
-}
