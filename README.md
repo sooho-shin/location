@@ -21,6 +21,10 @@ LOCATION에 오신 것을 환영합니다. 이 서비스는 외국인들이 현�
 - **HTTP 클라이언트**: [Axios](https://axios-http.com/)
 - **패키지 매니저**: [Yarn](https://yarnpkg.com/)
 
+## 🎨 디자인
+
+- **Figma**: https://www.figma.com/design/vVTTKRVHwWw6S0gMxd8SbM/LOC?node-id=1-26&t=RDgMD6TxLmBVOgaD-1
+
 ## 🚀 시작하기
 
 로컬 컴퓨터에서 프로젝트를 설정하고 실행하려면 다음 안내를 따르세요.
