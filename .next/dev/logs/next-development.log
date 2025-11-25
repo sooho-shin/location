@@ -1,11 +1,13 @@
-[00:00:01.472] Server  LOG     
-[00:00:01.472] Server  LOG        We detected TypeScript in your project and created a tsconfig.json file for you.
-[00:00:01.531] Server  LOG      ✓ Ready in 1363ms
-[00:00:05.555] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:23:19.401] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:23:23.712] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:23:54.912] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:23:56.177] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:23:56.974] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:24:00.745] Server  LOG      ✓ Compiled in 16ms
-[00:24:01.439] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:01.463] Server  LOG      ✓ Ready in 1280ms
+[00:00:03.766] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:04.666] Browser ERROR   Google Maps JavaScript API error: BillingNotEnabledMapError
+https://developers.google.com/maps/documentation/javascript/error-messages#billing-not-enabled-map-error
+[00:00:09.475] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:09.769] Browser ERROR   Google Maps JavaScript API error: BillingNotEnabledMapError
+https://developers.google.com/maps/documentation/javascript/error-messages#billing-not-enabled-map-error
+[00:00:29.963] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:30.258] Browser ERROR   Google Maps JavaScript API error: BillingNotEnabledMapError
+https://developers.google.com/maps/documentation/javascript/error-messages#billing-not-enabled-map-error
+[00:12:02.802] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:18:02.116] Server  LOG      ✓ Compiled in 76ms
+[00:18:02.197] Browser WARN    As of February 21st, 2024, google.maps.Marker is deprecated. Please use google.maps.marker.AdvancedMarkerElement instead. At this time, google.maps.Marker is not scheduled to be discontinued, but google.maps.marker.AdvancedMarkerElement is recommended over google.maps.Marker. While google.maps.Marker will continue to receive bug fixes for any major regressions, existing bugs in google.maps.Marker will not be addressed. At least 12 months notice will be given before support is discontinued. Please see https://developers.google.com/maps/deprecations for additional details and https://developers.google.com/maps/documentation/javascript/advanced-markers/migration for the migration guide.
