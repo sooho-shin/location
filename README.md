@@ -11,6 +11,7 @@ LOCATION에 오신 것을 환영합니다. 이 서비스는 외국인들이 현�
 
 ## 🛠️ 기술 스택
 
+### Frontend
 - **프레임워크**: [Next.js](https://nextjs.org/) (React)
 - **언어**: [TypeScript](https://www.typescriptlang.org/)
 - **스타일링**: [Styled-Components](https://styled-components.com/)
@@ -19,7 +20,33 @@ LOCATION에 오신 것을 환영합니다. 이 서비스는 외국인들이 현�
   - **서버 상태**: [TanStack Query (React Query)](https://tanstack.com/query/latest)
 - **지도**: [@react-google-maps/api](https://www.npmjs.com/package/@react-google-maps/api)
 - **HTTP 클라이언트**: [Axios](https://axios-http.com/)
-- **패키지 매니저**: [Yarn](https://yarnpkg.com/)
+
+### Backend
+- **프레임워크**: [Express.js](https://expressjs.com/)
+- **언어**: [TypeScript](https://www.typescriptlang.org/)
+- **포트**: 3001
+
+### 공통
+- **패키지 매니저**: [Yarn Workspaces](https://yarnpkg.com/)
+- **모노레포 구조**: `packages/*`
+
+## 📁 프로젝트 구조
+
+```
+location/
+├── packages/
+│   └── backend/          # Express.js 백엔드 서버 (포트 3001)
+│       ├── src/
+│       │   └── index.ts  # 서버 진입점
+│       ├── package.json
+│       └── tsconfig.json
+├── src/                  # Next.js 프론트엔드 (포트 3000)
+│   ├── app/
+│   ├── components/
+│   └── lib/
+├── package.json          # 루트 (Yarn Workspaces 설정)
+└── README.md
+```
 
 ## 🎨 디자인
 
@@ -45,6 +72,8 @@ LOCATION에 오신 것을 환영합니다. 이 서비스는 외국인들이 현�
 
 2.  **의존성 설치**
 
+    루트에서 한 번만 실행하면 모든 패키지의 의존성이 설치됩니다.
+
     ```bash
     yarn install
     ```
@@ -67,9 +96,9 @@ LOCATION에 오신 것을 환영합니다. 이 서비스는 외국인들이 현�
 
 ### 애플리케이션 실행
 
-- **개발 모드**
+#### 프론트엔드 (Next.js)
 
-  다음 명령어를 실행하여 개발 서버를 시작하세요:
+- **개발 모드**
 
   ```bash
   yarn dev
@@ -77,27 +106,42 @@ LOCATION에 오신 것을 환영합니다. 이 서비스는 외국인들이 현�
 
   브라우저에서 [http://localhost:3000](http://localhost:3000) 주소로 접속하여 결과를 확인하세요.
 
-- **프로덕션 빌드**
+#### 백엔드 (Express.js)
 
-  프로덕션용으로 최적화된 빌드를 생성하려면 다음 명령어를 실행하세요:
+- **개발 모드**
+
+  ```bash
+  yarn dev:backend
+  ```
+
+  서버가 [http://localhost:3001](http://localhost:3001)에서 실행됩니다.
+  
+  Health check: [http://localhost:3001/health](http://localhost:3001/health)
+
+#### 프로덕션 빌드
+
+- **프론트엔드 빌드**
 
   ```bash
   yarn build
   ```
 
-- **프로덕션 서버 시작**
-
-  프로덕션 빌드를 실행하려면 다음 명령어를 사용하세요:
+- **백엔드 빌드**
 
   ```bash
-  yarn start
+  yarn build:backend
   ```
 
 ## 📜 사용 가능한 스크립트
 
 `package.json` 파일에서 다음 스크립트들을 사용할 수 있습니다:
 
-- `dev`: 개발 모드로 애플리케이션을 시작합니다.
-- `build`: 최적화된 프로덕션 빌드를 생성합니다.
-- `start`: 프로덕션 서버를 시작합니다.
-- `lint`: Next.js 린터를 실행하여 코드 품질과 오류를 검사합니다.# location
+| 스크립트 | 설명 |
+|---------|------|
+| `dev` | 프론트엔드 개발 서버를 시작합니다 (포트 3000) |
+| `build` | 프론트엔드 프로덕션 빌드를 생성합니다 |
+| `start` | 프론트엔드 프로덕션 서버를 시작합니다 |
+| `lint` | Next.js 린터를 실행합니다 |
+| `dev:backend` | 백엔드 개발 서버를 시작합니다 (포트 3001) |
+| `build:backend` | 백엔드 프로덕션 빌드를 생성합니다 |
+| `start:backend` | 백엔드 프로덕션 서버를 시작합니다 |

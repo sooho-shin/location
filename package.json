@@ -1,15 +1,17 @@
 {
-  "name": "location",
-  "version": "0.1.0",
+  "name": "location-monorepo",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "backend:dev": "yarn --cwd packages/backend dev",
-    "backend:build": "yarn --cwd packages/backend build",
-    "backend:start": "yarn --cwd packages/backend start"
+    "dev:backend": "yarn workspace backend dev",
+    "build:backend": "yarn workspace backend build",
+    "start:backend": "yarn workspace backend start"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.20.7",
