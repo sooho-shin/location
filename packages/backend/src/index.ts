@@ -4,7 +4,7 @@ import cors from 'cors';
 const app = express();
 const PORT = 3001;
 
-// Middleware
+// Middleware test
 app.use(cors());
 app.use(express.json());
 
