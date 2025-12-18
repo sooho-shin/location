@@ -92,6 +92,30 @@ yarn install
 
 PostgreSQL 데이터베이스의 데이터가 컴퓨터를 재시작하거나 Docker 컨테이너가 종료되어도 유지되도록 Docker 볼륨을 사용합니다.
 
+#### 방법 A: Docker Compose 사용 (권장 ⭐)
+
+`docker-compose.yml`과 초기화 스크립트가 이미 준비되어 있어, 한 줄 명령으로 모든 설정이 완료됩니다.
+
+```bash
+# 백엔드 디렉토리로 이동
+cd packages/backend
+
+# Docker Compose로 데이터베이스 실행 (PostGIS, pgvector 자동 설치)
+docker-compose up -d
+
+# 상태 확인
+docker-compose ps
+
+# 로그 확인
+docker-compose logs -f db
+```
+
+> 💡 **참고**: 최초 실행 시 `init-db/01-extensions.sql` 스크립트가 자동으로 실행되어 PostGIS와 pgvector 확장이 설치됩니다.
+
+#### 방법 B: 수동 설정
+
+Docker Compose를 사용하지 않는 경우, 아래 단계를 수동으로 진행합니다.
+
 1.  **Docker 컨테이너 실행**:
     `pgvector/pgvector:pg15` 이미지를 사용하여 데이터베이스 컨테이너를 생성합니다. `-v` 옵션을 통해 `location-db-data`라는 볼륨을 컨테이너의 데이터 폴더에 연결하여 데이터 영속성을 보장합니다.
 
