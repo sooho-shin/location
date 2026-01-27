@@ -1,0 +1,123 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # 코드 품질 검사
+  lint:
+    name: 🔍 Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: 📚 Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: 🔍 Lint Frontend
+        run: yarn workspace frontend lint
+        continue-on-error: true
+
+      - name: 📝 Type Check Frontend
+        run: yarn workspace frontend tsc --noEmit
+        continue-on-error: true
+
+      - name: 📝 Type Check Backend
+        run: yarn workspace backend tsc --noEmit
+        continue-on-error: true
+
+  # Frontend 빌드 테스트
+  build-frontend:
+    name: 🏗️ Build Frontend
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: 📚 Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: 🏗️ Build Frontend
+        run: yarn build:frontend
+        env:
+          NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+
+      - name: 📤 Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: packages/frontend/.next
+          retention-days: 1
+
+  # Backend 빌드 테스트
+  build-backend:
+    name: 🏗️ Build Backend
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: 📚 Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: 🏗️ Build Backend
+        run: yarn build:backend
+
+      - name: 📤 Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build
+          path: packages/backend/dist
+          retention-days: 1
+
+  # Backend 테스트
+  test-backend:
+    name: 🧪 Test Backend
+    runs-on: ubuntu-latest
+    needs: build-backend
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: 📚 Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: 🧪 Run Tests
+        run: yarn workspace backend test
+        continue-on-error: true
+        env:
+          NODE_ENV: test

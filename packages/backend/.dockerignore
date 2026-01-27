@@ -1,0 +1,34 @@
+# 환경변수 설정 가이드
+
+node_modules
+.next
+dist
+build
+
+# Docker 관련
+Dockerfile*
+docker-compose*
+.docker*
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# 테스트
+coverage
+.nyc_output
+*.test.ts
+*.spec.ts
+__tests__
+
+# 기타
+*.md
+*.log
+.env*
+!.env.example
