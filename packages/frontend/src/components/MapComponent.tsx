@@ -167,8 +167,14 @@ const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "
     } else {
       // 여러 장소면 선택 패널 표시
       // 마우스 위치 또는 화면 중앙 사용
-      const x = event.domEvent?.clientX || window.innerWidth / 2;
-      const y = event.domEvent?.clientY || window.innerHeight / 2;
+      const domEvent = event.domEvent;
+      let x = window.innerWidth / 2;
+      let y = window.innerHeight / 2;
+
+      if (domEvent instanceof MouseEvent) {
+        x = domEvent.clientX;
+        y = domEvent.clientY;
+      }
 
       setClusterSelection({
         places: cluster.places,
