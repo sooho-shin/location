@@ -1,26 +1,17 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useMemo } from "react";
-import { GoogleMap, useJsApiLoader, MarkerF, OverlayView } from "@react-google-maps/api";
-import styled from "styled-components";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
+import L from "leaflet";
 import PlaceDetailPanel from "./PlaceDetailPanel";
 import ClusterSelectionPanel from "./ClusterSelectionPanel";
 
-const containerStyle = {
-  width: "100%",
-  height: "100%",
-};
+const initialCenter: [number, number] = [37.5665, 126.978];
 
-const initialCenter = {
-  lat: 37.5665,
-  lng: 126.978,
-};
-
-// 카테고리별 마커 색상
 const categoryColors: Record<string, string> = {
-  kpop: "#FF4081",    // 핑크
-  ramen: "#FF9800",   // 오렌지
-  default: "#9C27B0", // 보라
+  kpop: "#FF4081",
+  ramen: "#FF9800",
+  default: "#9C27B0",
 };
 
 export interface Place {
@@ -42,9 +33,8 @@ interface MapComponentProps {
   categoryId?: string;
 }
 
-// 두 좌표 사이의 거리 계산 (미터)
 const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-  const R = 6371000; // 지구 반지름 (미터)
+  const R = 6371000;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLng = (lng2 - lng1) * Math.PI / 180;
   const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -54,7 +44,6 @@ const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: numbe
   return R * c;
 };
 
-// 줌 레벨에 따른 클러스터링 반경 (미터)
 const getClusterRadius = (zoom: number): number => {
   if (zoom >= 18) return 10;
   if (zoom >= 16) return 30;
@@ -63,7 +52,6 @@ const getClusterRadius = (zoom: number): number => {
   return 500;
 };
 
-// 장소들을 클러스터링
 const clusterPlaces = (places: Place[], clusterRadius: number): Cluster[] => {
   const clusters: Cluster[] = [];
   const clustered: Set<number> = new Set();
@@ -74,7 +62,6 @@ const clusterPlaces = (places: Place[], clusterRadius: number): Cluster[] => {
     const cluster: Place[] = [place];
     clustered.add(i);
 
-    // 이 장소와 가까운 다른 장소들 찾기
     places.forEach((otherPlace, j) => {
       if (i === j || clustered.has(j)) return;
 
@@ -89,7 +76,6 @@ const clusterPlaces = (places: Place[], clusterRadius: number): Cluster[] => {
       }
     });
 
-    // 클러스터 중심점 계산
     const centerLat = cluster.reduce((sum, p) => sum + p.latitude, 0) / cluster.length;
     const centerLng = cluster.reduce((sum, p) => sum + p.longitude, 0) / cluster.length;
 
@@ -103,14 +89,61 @@ const clusterPlaces = (places: Place[], clusterRadius: number): Cluster[] => {
   return clusters;
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "default" }) => {
-  const { isLoaded } = useJsApiLoader({
-    id: "google-map-script",
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+const createCurrentLocationIcon = () =>
+  L.divIcon({
+    className: "current-location-marker",
+    html: `<div style="width:24px;height:24px;border-radius:50%;background:#4285F4;border:3px solid #ffffff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
   });
 
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [center, setCenter] = useState(initialCenter);
+const createPlaceIcon = (color: string, selected: boolean) =>
+  L.divIcon({
+    className: "place-marker",
+    html: `<div style="width:16px;height:16px;border-radius:50%;background:${selected ? "#FFFFFF" : color};border:${selected ? 3 : 2}px solid ${selected ? color : "#ffffff"};box-shadow:0 2px 4px rgba(0,0,0,0.3);"></div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  });
+
+const createClusterIcon = (color: string, count: number, selected: boolean) =>
+  L.divIcon({
+    className: "cluster-marker",
+    html: `<div style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:${selected ? "#ffffff" : color};border:3px solid ${selected ? color : "#ffffff"};box-shadow:0 4px 12px rgba(0,0,0,0.3);color:${selected ? color : "#ffffff"};font-weight:700;font-size:14px;font-family:Pretendard,-apple-system,sans-serif;">+${count}</div>`,
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+  });
+
+const MapEvents: React.FC<{ onZoom: (zoom: number) => void }> = ({ onZoom }) => {
+  useMapEvents({
+    zoomend: (e) => onZoom(e.target.getZoom()),
+  });
+  return null;
+};
+
+const PanToPlace: React.FC<{ place: Place | null }> = ({ place }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (place) {
+      map.panTo([place.latitude, place.longitude]);
+    }
+  }, [place, map]);
+  return null;
+};
+
+const InitialCenter: React.FC<{ center: [number, number] }> = ({ center }) => {
+  const map = useMap();
+  const appliedRef = useRef(false);
+  useEffect(() => {
+    if (!appliedRef.current && (center[0] !== initialCenter[0] || center[1] !== initialCenter[1])) {
+      map.setView(center, map.getZoom());
+      appliedRef.current = true;
+    }
+  }, [center, map]);
+  return null;
+};
+
+const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "default" }) => {
+  const [center, setCenter] = useState<[number, number]>(initialCenter);
   const [zoom, setZoom] = useState(14);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [clusterSelection, setClusterSelection] = useState<{
@@ -118,16 +151,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "
     position: { x: number; y: number };
   } | null>(null);
 
-  // 현재 위치 가져오기
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const currentLocation = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          setCenter(currentLocation);
+          setCenter([position.coords.latitude, position.coords.longitude]);
         },
         () => {
           console.error("Error getting user location");
@@ -136,160 +164,79 @@ const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "
     }
   }, []);
 
-  // 클러스터링 계산
   const clusters = useMemo(() => {
     const radius = getClusterRadius(zoom);
     return clusterPlaces(places, radius);
   }, [places, zoom]);
 
-  const onLoad = useCallback((map: google.maps.Map) => {
-    map.setZoom(14);
-    setMap(map);
-  }, []);
-
-  const onUnmount = useCallback(() => {
-    setMap(null);
-  }, []);
-
-  const handleZoomChanged = useCallback(() => {
-    if (map) {
-      const newZoom = map.getZoom();
-      if (newZoom) {
-        setZoom(newZoom);
-      }
-    }
-  }, [map]);
-
-  const handleClusterClick = (cluster: Cluster, event: google.maps.MapMouseEvent) => {
-    if (cluster.places.length === 1) {
-      // 단일 장소면 바로 선택
-      handlePlaceSelect(cluster.places[0]);
-    } else {
-      // 여러 장소면 선택 패널 표시
-      // 마우스 위치 또는 화면 중앙 사용
-      const domEvent = event.domEvent;
-      let x = window.innerWidth / 2;
-      let y = window.innerHeight / 2;
-
-      if (domEvent instanceof MouseEvent) {
-        x = domEvent.clientX;
-        y = domEvent.clientY;
-      }
-
-      setClusterSelection({
-        places: cluster.places,
-        position: { x, y },
-      });
-    }
-  };
+  const markerColor = categoryColors[categoryId] || categoryColors.default;
 
   const handlePlaceSelect = (place: Place) => {
     console.log("📍 장소 선택:", place.name);
     setSelectedPlace(place);
     setClusterSelection(null);
-
-    // 지도 중심을 선택된 장소로 이동
-    if (map) {
-      map.panTo({ lat: place.latitude, lng: place.longitude });
-    }
   };
 
-  const handleClosePanel = () => {
-    setSelectedPlace(null);
-  };
+  const handleClosePanel = () => setSelectedPlace(null);
+  const handleCloseClusterSelection = () => setClusterSelection(null);
 
-  const handleCloseClusterSelection = () => {
-    setClusterSelection(null);
-  };
-
-  const markerColor = categoryColors[categoryId] || categoryColors.default;
-
-  return isLoaded ? (
+  return (
     <>
-      <GoogleMap
-        mapContainerStyle={containerStyle}
-        center={center}
+      <MapContainer
+        center={initialCenter}
         zoom={14}
-        onLoad={onLoad}
-        onUnmount={onUnmount}
-        onZoomChanged={handleZoomChanged}
-        options={{
-          disableDefaultUI: false,
-          zoomControl: true,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-        }}
+        style={{ width: "100%", height: "100%" }}
+        zoomControl={true}
       >
-        {/* 현재 위치 마커 (파란색) */}
-        <MarkerF
-          position={center}
-          icon={{
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 12,
-            fillColor: "#4285F4",
-            fillOpacity: 1,
-            strokeColor: "#ffffff",
-            strokeWeight: 3,
-          }}
-          title="현재 위치"
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{y}/{x}.png"
         />
+        <MapEvents onZoom={setZoom} />
+        <InitialCenter center={center} />
+        <PanToPlace place={selectedPlace} />
 
-        {/* 클러스터/마커 표시 */}
+        <Marker position={center} icon={createCurrentLocationIcon()} />
+
         {clusters.map((cluster) => {
           const isMultiple = cluster.places.length > 1;
-          const isAnySelected = cluster.places.some(p => p.name === selectedPlace?.name);
+          const isAnySelected = cluster.places.some((p) => p.name === selectedPlace?.name);
 
           if (isMultiple) {
-            // 클러스터 마커 (여러 장소)
             return (
-              <OverlayView
+              <Marker
                 key={cluster.id}
-                position={cluster.center}
-                mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
-              >
-                <ClusterMarker
-                  $color={markerColor}
-                  $isSelected={isAnySelected}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const rect = (e.target as HTMLElement).getBoundingClientRect();
+                position={[cluster.center.lat, cluster.center.lng]}
+                icon={createClusterIcon(markerColor, cluster.places.length, isAnySelected)}
+                eventHandlers={{
+                  click: (e) => {
+                    const ev = e.originalEvent as MouseEvent;
                     setClusterSelection({
                       places: cluster.places,
-                      position: { x: rect.left + rect.width / 2, y: rect.top },
+                      position: { x: ev.clientX, y: ev.clientY },
                     });
-                  }}
-                >
-                  <ClusterCount>+{cluster.places.length}</ClusterCount>
-                </ClusterMarker>
-              </OverlayView>
-            );
-          } else {
-            // 단일 마커
-            const place = cluster.places[0];
-            const isSelected = selectedPlace?.name === place.name;
-
-            return (
-              <MarkerF
-                key={cluster.id}
-                position={{ lat: place.latitude, lng: place.longitude }}
-                icon={{
-                  path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-                  scale: 7,
-                  fillColor: isSelected ? "#FFFFFF" : markerColor,
-                  fillOpacity: 1,
-                  strokeColor: isSelected ? markerColor : "#ffffff",
-                  strokeWeight: isSelected ? 3 : 2,
+                  },
                 }}
-                title={`${place.name} - ${place.description}`}
-                onClick={() => handlePlaceSelect(place)}
               />
             );
           }
-        })}
-      </GoogleMap>
 
-      {/* 클러스터 선택 패널 */}
+          const place = cluster.places[0];
+          const isSelected = selectedPlace?.name === place.name;
+
+          return (
+            <Marker
+              key={cluster.id}
+              position={[place.latitude, place.longitude]}
+              icon={createPlaceIcon(markerColor, isSelected)}
+              eventHandlers={{
+                click: () => handlePlaceSelect(place),
+              }}
+            />
+          );
+        })}
+      </MapContainer>
+
       {clusterSelection && (
         <ClusterSelectionPanel
           places={clusterSelection.places}
@@ -300,61 +247,13 @@ const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "
         />
       )}
 
-      {/* 장소 상세 패널 */}
       <PlaceDetailPanel
         place={selectedPlace}
         onClose={handleClosePanel}
         categoryId={categoryId}
       />
     </>
-  ) : (
-    <LoadingContainer>Loading Map...</LoadingContainer>
   );
 };
 
 export default MapComponent;
-
-const LoadingContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  font-size: 1.5rem;
-  color: #555;
-  background: #f5f5f5;
-`;
-
-const ClusterMarker = styled.div<{ $color: string; $isSelected: boolean }>`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: ${props => props.$isSelected ? "white" : props.$color};
-  border: 3px solid ${props => props.$isSelected ? props.$color : "white"};
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-  transform: translate(-50%, -50%);
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: translate(-50%, -50%) scale(1.15);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-  }
-
-  &:active {
-    transform: translate(-50%, -50%) scale(1.05);
-  }
-`;
-
-const ClusterCount = styled.span`
-  font-family: "Pretendard", -apple-system, sans-serif;
-  font-weight: 700;
-  font-size: 14px;
-  color: inherit;
-  
-  ${ClusterMarker}:not([style*="background: white"]) & {
-    color: white;
-  }
-`;
