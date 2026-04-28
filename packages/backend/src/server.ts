@@ -31,7 +31,7 @@ app.post('/api/recommend', async (req: Request, res: Response) => {
 
     console.log(`📍 추천 요청: ${category} at (${latitude}, ${longitude})`);
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const prompt = `
 당신은 서울의 로컬 여행 가이드입니다.

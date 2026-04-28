@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import PlaceDetailPanel from "./PlaceDetailPanel";
 import ClusterSelectionPanel from "./ClusterSelectionPanel";
 
@@ -190,7 +191,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{y}/{x}.png"
+          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <MapEvents onZoom={setZoom} />
         <InitialCenter center={center} />

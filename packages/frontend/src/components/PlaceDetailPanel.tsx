@@ -176,7 +176,7 @@ const PanelOverlay = styled.div`
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.3);
-  z-index: 100;
+  z-index: 300;
   animation: ${fadeIn} 0.2s ease-out;
 `;
 

@@ -1,10 +1,15 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import dynamic from "next/dynamic";
 import styled from "styled-components";
 import Header from "../components/Header";
-import MapComponent, { Place } from "../components/MapComponent";
+import type { Place } from "../components/MapComponent";
 import BottomSheet from "../components/BottomSheet";
+
+const MapComponent = dynamic(() => import("../components/MapComponent"), {
+  ssr: false,
+});
 
 export default function Home() {
   const [places, setPlaces] = useState<Place[]>([]);
@@ -54,11 +59,12 @@ export default function Home() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("API 요청 실패");
-      }
-
       const data = await response.json();
+
+      if (!response.ok) {
+        console.error("API 오류 응답:", data);
+        throw new Error(data?.details || data?.error || "API 요청 실패");
+      }
       console.log("추천 장소:", data);
 
       if (data.places && Array.isArray(data.places)) {
@@ -105,7 +111,6 @@ const MapWrapper = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1;
 `;
 
 const LoadingOverlay = styled.div`
