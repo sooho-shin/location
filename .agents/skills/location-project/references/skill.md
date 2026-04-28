@@ -28,7 +28,6 @@ $location-project
 - Gemini API와 선택적 Google Places API 동작.
 - 로컬 개발, 빌드, lint, 배포 명령어.
 - 필수 및 선택 환경 변수.
-- Markdown 문서와 커밋 메시지를 한국어로 작성하는 프로젝트 규칙.
 
 ## Codex가 이 스킬을 써야 하는 경우
 
