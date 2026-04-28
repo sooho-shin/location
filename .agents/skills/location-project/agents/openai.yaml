@@ -1,0 +1,4 @@
+interface:
+  display_name: "Location Project"
+  short_description: "Project-specific workflow rules for the LOCATION monorepo."
+  default_prompt: "Use the location-project skill for this repository."
