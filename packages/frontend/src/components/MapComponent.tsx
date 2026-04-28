@@ -16,11 +16,17 @@ const categoryColors: Record<string, string> = {
 };
 
 export interface Place {
+  id?: string;
+  placeId?: string;
   name: string;
   description: string;
   latitude: number;
   longitude: number;
   category: string;
+  source?: "google_places" | "gemini";
+  googleMapsUri?: string;
+  rating?: number;
+  userRatingCount?: number;
 }
 
 interface Cluster {

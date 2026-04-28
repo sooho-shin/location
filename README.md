@@ -1,152 +1,174 @@
-# LOCATION 📍
+# LOCATION
 
-LOCATION에 오신 것을 환영합니다. 이 서비스는 외국인들이 현재 위치와 관심사를 기반으로 한국의 유명 명소와 숨겨진 장소를 쉽게 찾을 수 있도록 돕는 웹 서비스입니다.
+LOCATION은 사용자의 현재 위치와 관심 카테고리를 기준으로 한국의 장소를 추천하고 지도에 표시하는 웹 서비스입니다.
 
-## ✨ 주요 기능
+## 주요 기능
 
-- **위치 기반 검색**: 사용자의 현재 위치를 자동으로 가져와 관련성 높은 결과를 제공합니다.
-- **AI 기반 추천**: "케이팝", "고궁", "맛집"과 같은 키워드를 입력하면 AI가 주변 명소들을 추천합니다.
-- **인터랙티브 지도**: 추천된 장소를 Google 지도 위에 시각적으로 표시합니다.
-- **반응형 디자인**: 데스크톱과 모바일 기기 모두에서 완벽하게 접근하고 사용할 수 있습니다.
+- 위치 기반 추천: 브라우저 Geolocation으로 현재 위치를 가져옵니다.
+- AI 추천: Gemini가 카테고리와 키워드에 맞는 장소를 추천합니다.
+- 실제 장소 후보 결합: `GOOGLE_PLACES_API_KEY`가 있으면 Google Places API 후보를 먼저 가져온 뒤 Gemini가 후보 안에서 설명과 순서를 정리합니다.
+- 실제 상세 정보: 추천 장소에 Google Place ID가 있으면 Place Details API로 주소, 전화번호, 영업시간, 평점, 리뷰를 가져옵니다.
+- 지도 표시: OpenStreetMap 타일과 Leaflet으로 장소 마커와 클러스터를 표시합니다.
+- 장소 상세: 마커 클릭 시 상세 패널과 카카오맵 길찾기 링크를 제공합니다.
 
-## 🛠️ 기술 스택
+## 기술 스택
 
 ### Frontend
-- **프레임워크**: [Next.js](https://nextjs.org/) (React)
-- **언어**: [TypeScript](https://www.typescriptlang.org/)
-- **스타일링**: [Styled-Components](https://styled-components.com/)
-- **상태 관리**:
-  - **클라이언트 상태**: [Zustand](https://github.com/pmndrs/zustand)
-  - **서버 상태**: [TanStack Query (React Query)](https://tanstack.com/query/latest)
-- **지도**: [@react-google-maps/api](https://www.npmjs.com/package/@react-google-maps/api)
-- **HTTP 클라이언트**: [Axios](https://axios-http.com/)
+
+- Next.js 16
+- React 19
+- TypeScript
+- styled-components
+- Leaflet, react-leaflet
 
 ### Backend
-- **프레임워크**: [Express.js](https://expressjs.com/)
-- **언어**: [TypeScript](https://www.typescriptlang.org/)
-- **포트**: 3001
+
+- Express
+- TypeScript
+- Gemini API
+- Google Places API (선택)
 
 ### 공통
-- **패키지 매니저**: [Yarn Workspaces](https://yarnpkg.com/)
-- **모노레포 구조**: `packages/*`
 
-## 📁 프로젝트 구조
+- Yarn Workspaces
+- 모노레포 구조: `packages/*`
 
-```
+## 프로젝트 구조
+
+```text
 location/
 ├── packages/
-│   ├── backend/              # Express.js 백엔드 서버 (포트 3001)
+│   ├── backend/
 │   │   ├── src/
-│   │   │   └── index.ts      # 서버 진입점
-│   │   ├── docker-compose.yml
-│   │   ├── init-db/          # DB 초기화 스크립트
+│   │   │   ├── server.ts    # 실제 Express 서버
+│   │   │   └── index.ts     # server.ts 호환 진입점
 │   │   ├── package.json
 │   │   └── tsconfig.json
-│   └── frontend/             # Next.js 프론트엔드 (포트 3000)
+│   └── frontend/
 │       ├── src/
 │       │   ├── app/
 │       │   ├── components/
 │       │   └── lib/
 │       ├── package.json
 │       └── tsconfig.json
-├── package.json              # 루트 (Yarn Workspaces 설정)
+├── package.json
 └── README.md
 ```
 
-## 🎨 디자인
+## 환경 변수
 
-- **Figma**: https://www.figma.com/design/vVTTKRVHwWw6S0gMxd8SbM/LOC?node-id=1-26&t=RDgMD6TxLmBVOgaD-1
+### Frontend
 
-## 🚀 시작하기
+`packages/frontend/.env.local`
 
-로컬 컴퓨터에서 프로젝트를 설정하고 실행하려면 다음 안내를 따르세요.
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
 
-### 요구 사항
+지도는 OpenStreetMap + Leaflet 기반이라 프론트엔드 지도 API 키가 필요하지 않습니다.
 
-- [Node.js](https://nodejs.org/en) (v18.x 이상 권장)
-- [Yarn](https://yarnpkg.com/getting-started/install)
+### Backend
 
-### 설치
+`packages/backend/.env`
 
-1.  **저장소 복제**
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+GOOGLE_PLACES_API_KEY=your_google_places_api_key_here
+PORT=3001
+NODE_ENV=development
+```
 
-    ```bash
-    git clone <repository-url>
-    cd location
-    ```
+`GOOGLE_PLACES_API_KEY`는 선택입니다. 값이 없으면 Gemini 단독 추천으로 동작합니다.
 
-2.  **의존성 설치**
+## 실행
 
-    루트에서 한 번만 실행하면 모든 패키지의 의존성이 설치됩니다.
+의존성 설치:
 
-    ```bash
-    yarn install
-    ```
+```bash
+yarn install
+```
 
-3.  **환경 변수 설정**
+프론트엔드 개발 서버:
 
-    이 프로젝트는 Google Maps API 키가 있어야 정상적으로 동작합니다.
+```bash
+yarn dev
+```
 
-    - 예제 파일을 복사하여 프로젝트의 루트 경로에 `.env.local` 파일을 생성하세요:
-      ```bash
-      cp .env.local.example .env.local
-      ```
-    - 새로 생성된 `.env.local` 파일을 여세요.
-    - [Google Cloud Console](https://console.cloud.google.com/google/maps-apis/)에서 API 키를 발급받으세요.
-    - `YOUR_API_KEY_HERE` 부분을 발급받은 실제 Google Maps API 키로 교체하세요.
+기본 주소는 `http://localhost:3000`입니다.
 
-      ```env
-      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIz... (발급받은 키)
-      ```
+백엔드 개발 서버:
 
-### 애플리케이션 실행
+```bash
+yarn dev:backend
+```
 
-#### 프론트엔드 (Next.js)
+기본 주소는 `http://localhost:3001`입니다.
 
-- **개발 모드**
+프론트와 백엔드 동시 실행:
 
-  ```bash
-  yarn dev
-  ```
+```bash
+yarn dev:all
+```
 
-  브라우저에서 [http://localhost:3000](http://localhost:3000) 주소로 접속하여 결과를 확인하세요.
+## API
 
-#### 백엔드 (Express.js)
+### `GET /health`
 
-- **개발 모드**
+백엔드 상태를 확인합니다.
 
-  ```bash
-  yarn dev:backend
-  ```
+### `POST /api/recommend`
 
-  서버가 [http://localhost:3001](http://localhost:3001)에서 실행됩니다.
-  
-  Health check: [http://localhost:3001/health](http://localhost:3001/health)
+현재 위치와 카테고리를 기반으로 장소를 추천합니다.
 
-#### 프로덕션 빌드
+요청:
 
-- **프론트엔드 빌드**
+```json
+{
+  "category": "케이팝 헌터스",
+  "keyword": "K-pop 관련 명소, 엔터테인먼트 회사, 굿즈샵",
+  "latitude": 37.5665,
+  "longitude": 126.978
+}
+```
 
-  ```bash
-  yarn build
-  ```
+### `GET /api/places/:placeId`
 
-- **백엔드 빌드**
+Google Place Details API를 통해 선택한 장소의 상세 정보를 가져옵니다. `GOOGLE_PLACES_API_KEY`가 설정되어 있어야 합니다.
 
-  ```bash
-  yarn build:backend
-  ```
+응답:
 
-## 📜 사용 가능한 스크립트
+```json
+{
+  "places": [
+    {
+      "name": "장소 이름",
+      "description": "추천 설명",
+      "latitude": 37.5665,
+      "longitude": 126.978,
+      "category": "케이팝 헌터스",
+      "source": "google_places"
+    }
+  ],
+  "source": "google_places_gemini"
+}
+```
 
-`package.json` 파일에서 다음 스크립트들을 사용할 수 있습니다:
+## 빌드
 
-| 스크립트 | 설명 |
-|---------|------|
-| `dev` | 프론트엔드 개발 서버를 시작합니다 (포트 3000) |
-| `build` | 프론트엔드 프로덕션 빌드를 생성합니다 |
-| `start` | 프론트엔드 프로덕션 서버를 시작합니다 |
-| `lint` | Next.js 린터를 실행합니다 |
-| `dev:backend` | 백엔드 개발 서버를 시작합니다 (포트 3001) |
-| `build:backend` | 백엔드 프로덕션 빌드를 생성합니다 |
-| `start:backend` | 백엔드 프로덕션 서버를 시작합니다 |
+프론트엔드:
+
+```bash
+yarn build:frontend
+```
+
+백엔드:
+
+```bash
+yarn build:backend
+```
+
+전체 프론트 빌드 alias:
+
+```bash
+yarn build
+```

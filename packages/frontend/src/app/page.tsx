@@ -6,6 +6,7 @@ import styled from "styled-components";
 import Header from "../components/Header";
 import type { Place } from "../components/MapComponent";
 import BottomSheet from "../components/BottomSheet";
+import { API_BASE_URL } from "../lib/config";
 
 const MapComponent = dynamic(() => import("../components/MapComponent"), {
   ssr: false,
@@ -46,7 +47,7 @@ export default function Home() {
     setCurrentCategory(categoryId);
 
     try {
-      const response = await fetch("http://localhost:3001/api/recommend", {
+      const response = await fetch(`${API_BASE_URL}/api/recommend`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

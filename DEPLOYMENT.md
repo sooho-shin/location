@@ -1,195 +1,138 @@
-# 🚀 CI/CD 및 배포 가이드
+# CI/CD 및 배포 가이드
 
-## 📋 목차
-- [GitHub Secrets 설정](#github-secrets-설정)
-- [Vercel 연동](#vercel-연동)
-- [백엔드 배포 옵션](#백엔드-배포-옵션)
-- [환경변수 설명](#환경변수-설명)
+## 배포 구조
 
----
+- Frontend: Vercel 권장, Root Directory는 `packages/frontend`
+- Backend: Railway, Render, Fly.io, Docker 중 선택
+- 지도: OpenStreetMap + Leaflet 사용, 프론트 지도 API 키 불필요
+- 추천: Gemini 필수, Google Places API는 실제 장소 후보 검색용 선택 기능
 
-## 🔐 GitHub Secrets 설정
+## GitHub Secrets
 
-GitHub Repository → Settings → Secrets and variables → Actions에서 다음 시크릿을 추가하세요:
+### Frontend 배포
 
-### 필수 Secrets
+| Secret Name | 설명 |
+| --- | --- |
+| `VERCEL_TOKEN` | Vercel 인증 토큰 |
+| `VERCEL_ORG_ID` | Vercel 조직 ID |
+| `VERCEL_PROJECT_ID` | Vercel 프로젝트 ID |
+| `NEXT_PUBLIC_API_URL` | 배포된 백엔드 URL |
 
-| Secret Name | 설명 | 얻는 방법 |
-|-------------|-----|----------|
-| `VERCEL_TOKEN` | Vercel 인증 토큰 | [Vercel Settings > Tokens](https://vercel.com/account/tokens) |
-| `VERCEL_ORG_ID` | Vercel 조직 ID | `.vercel/project.json` 또는 Vercel 대시보드 |
-| `VERCEL_PROJECT_ID` | Vercel 프로젝트 ID | `.vercel/project.json` 또는 Vercel 대시보드 |
-| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Google Maps API 키 | [Google Cloud Console](https://console.cloud.google.com/apis/credentials) |
-| `NEXT_PUBLIC_API_URL` | 백엔드 API URL | 예: `https://your-backend.railway.app` |
+### Backend 배포
 
-### 선택 Secrets (백엔드 배포용)
+| Secret Name | 설명 |
+| --- | --- |
+| `GEMINI_API_KEY` | Gemini 추천 API 키 |
+| `GOOGLE_PLACES_API_KEY` | 선택, Google Places API 후보 검색 키 |
+| `RAILWAY_TOKEN` | 선택, Railway 배포 토큰 |
+| `RENDER_DEPLOY_HOOK` | 선택, Render 배포 훅 |
 
-| Secret Name | 설명 | 필요 서비스 |
-|-------------|-----|------------|
-| `RAILWAY_TOKEN` | Railway 배포 토큰 | Railway 사용시 |
-| `RENDER_DEPLOY_HOOK` | Render 배포 웹훅 URL | Render 사용시 |
-| `GEMINI_API_KEY` | Gemini AI API 키 | 백엔드 AI 기능 |
-
----
-
-## 🔗 Vercel 연동
-
-### 1. Vercel CLI로 프로젝트 설정
+## Vercel 설정
 
 ```bash
-# Vercel CLI 설치
-npm install -g vercel
-
-# 프로젝트 연결 (frontend 디렉토리에서)
 cd packages/frontend
 vercel link
-```
-
-### 2. 환경변수 설정
-
-```bash
-# 환경변수 추가
-vercel env add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 vercel env add NEXT_PUBLIC_API_URL
 ```
 
-### 3. 수동 배포 테스트
+Vercel Dashboard에서 직접 연결하는 경우:
 
-```bash
-# Preview 배포
-vercel
+- Root Directory: `packages/frontend`
+- Build Command: `yarn build`
+- Output Directory: `.next`
+- Environment Variables:
+  - `NEXT_PUBLIC_API_URL=https://your-backend.example.com`
 
-# Production 배포
-vercel --prod
-```
+## 백엔드 배포
 
-### 4. Git 연동 (권장)
+### Railway
 
-1. [Vercel Dashboard](https://vercel.com/dashboard)에서 프로젝트 생성
-2. GitHub 저장소 연결
-3. Root Directory: `packages/frontend` 설정
-4. 환경변수 설정
-
----
-
-## 🖥️ 백엔드 배포 옵션
-
-### Option 1: Railway (권장 - 쉬움) 🚂
-
-1. [Railway](https://railway.app)에 GitHub 연결
-2. `packages/backend` 폴더 선택
+1. GitHub 저장소 연결
+2. 서비스 Root Directory를 `packages/backend`로 설정
 3. 환경변수 설정:
    - `GEMINI_API_KEY`
-   - `PORT=3001`
-4. 배포 URL을 `NEXT_PUBLIC_API_URL`에 설정
+   - `GOOGLE_PLACES_API_KEY` 선택
+   - `PORT`
+4. 생성된 백엔드 URL을 프론트의 `NEXT_PUBLIC_API_URL`에 설정
 
-### Option 2: Render 🎨
+### Render
 
-1. [Render](https://render.com)에서 Web Service 생성
-2. GitHub 연결 및 `packages/backend` 선택
-3. Build Command: `yarn install && yarn build`
-4. Start Command: `yarn start`
-5. 환경변수 설정
+- Root Directory: `packages/backend`
+- Build Command: `yarn install --frozen-lockfile && yarn build`
+- Start Command: `yarn start`
+- Environment Variables:
+  - `GEMINI_API_KEY`
+  - `GOOGLE_PLACES_API_KEY` 선택
+  - `NODE_ENV=production`
 
-### Option 3: Fly.io 🪁
-
-```bash
-# Fly CLI 설치
-curl -L https://fly.io/install.sh | sh
-
-# 앱 생성 및 배포
-cd packages/backend
-fly launch
-fly deploy
-```
-
-### Option 4: Docker (자체 서버) 🐳
+### Docker
 
 ```bash
-# 이미지 빌드
 cd packages/backend
 docker build -t location-backend .
-
-# 실행
 docker run -p 3001:3001 \
   -e GEMINI_API_KEY=your_key \
+  -e GOOGLE_PLACES_API_KEY=your_places_key \
   location-backend
 ```
 
----
+`GOOGLE_PLACES_API_KEY` 없이 실행하면 Gemini 단독 추천으로 동작합니다.
 
-## 📝 환경변수 설명
+## 환경 변수
 
-### Frontend (.env.local)
+### Frontend
 
 ```env
-# Google Maps API (필수)
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSy...
-
-# 백엔드 API URL
-NEXT_PUBLIC_API_URL=https://your-backend-url.com
+NEXT_PUBLIC_API_URL=https://your-backend.example.com
 ```
 
-### Backend (.env)
+### Backend
 
 ```env
-# Gemini AI API (필수)
 GEMINI_API_KEY=your_gemini_api_key
-
-# 서버 설정
+GOOGLE_PLACES_API_KEY=your_google_places_api_key
 PORT=3001
 NODE_ENV=production
-
-# 데이터베이스 (선택)
-DATABASE_URL=postgresql://...
-
-# Redis (선택)
-REDIS_URL=redis://...
 ```
 
----
+## 배포 체크리스트
 
-## ✅ 배포 체크리스트
+- [ ] 백엔드 `/health` 응답 확인
+- [ ] 프론트 `NEXT_PUBLIC_API_URL`이 배포 백엔드 URL인지 확인
+- [ ] 백엔드 CORS가 프론트 도메인 요청을 허용하는지 확인
+- [ ] `GEMINI_API_KEY` 설정 확인
+- [ ] 실제 장소 후보 검색이 필요하면 `GOOGLE_PLACES_API_KEY` 설정 확인
+- [ ] `POST /api/recommend` 응답에 `places` 배열이 포함되는지 확인
 
-- [ ] GitHub Secrets 설정 완료
-- [ ] Vercel 프로젝트 연결
-- [ ] 환경변수 모두 설정
-- [ ] 백엔드 배포 플랫폼 선택 및 설정
-- [ ] CORS 설정 (백엔드에서 프론트엔드 도메인 허용)
-- [ ] API URL 연결 테스트
-- [ ] Production 배포 테스트
+## CI/CD 워크플로
 
----
+### CI
 
-## 🔄 CI/CD 워크플로
-
-### CI (Pull Request)
-```
-push/PR → Lint → Type Check → Build Frontend → Build Backend → Test
+```text
+push/PR -> install -> frontend build -> backend build -> backend test
 ```
 
-### CD (Main Branch)
+### CD
+
+```text
+push main -> Vercel frontend deploy -> optional backend deploy
 ```
-push main → Build → Deploy Frontend (Vercel) → Deploy Backend (선택)
-```
 
-### 수동 배포
-GitHub Actions → Deploy 워크플로 → Run workflow
+## 문제 해결
 
----
+### 프론트에서 추천 API 호출 실패
 
-## 🆘 문제 해결
+- `NEXT_PUBLIC_API_URL` 값 확인
+- 백엔드 `/health` 확인
+- 브라우저 콘솔의 CORS 오류 확인
 
-### Vercel 빌드 실패
-- Root Directory 설정 확인 (`packages/frontend`)
-- 환경변수 설정 확인
-- `yarn.lock` 파일 존재 확인
+### 장소 추천 실패
 
-### 백엔드 연결 실패
-- CORS 설정 확인
-- API URL 환경변수 확인
-- 백엔드 로그 확인
+- `GEMINI_API_KEY` 설정 확인
+- 백엔드 로그에서 Gemini 응답 파싱 오류 확인
+- Google Places를 쓰는 경우 Places API (New)가 활성화되어 있는지 확인
 
-### Google Maps 로딩 실패
-- API 키 제한 설정 확인
-- 배포 도메인 허용 확인
+### 장소 정확도가 낮음
+
+- `GOOGLE_PLACES_API_KEY`를 설정해 Google Places 후보 검색을 활성화
+- 카테고리별 `keyword`를 더 구체적으로 조정

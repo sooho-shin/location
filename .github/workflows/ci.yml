@@ -60,7 +60,6 @@ jobs:
       - name: 🏗️ Build Frontend
         run: yarn build:frontend
         env:
-          NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
 
       - name: 📤 Upload build artifacts
@@ -90,6 +89,9 @@ jobs:
 
       - name: 🏗️ Build Backend
         run: yarn build:backend
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
 
       - name: 📤 Upload build artifacts
         uses: actions/upload-artifact@v4

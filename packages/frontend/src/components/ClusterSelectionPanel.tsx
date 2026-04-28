@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { createPortal } from "react-dom";
 import styled, { keyframes } from "styled-components";
 import { Place } from "./MapComponent";
 
@@ -30,11 +31,11 @@ const ClusterSelectionPanel: React.FC<ClusterSelectionPanelProps> = ({
 
     // 패널이 화면 밖으로 나가지 않도록 위치 조정
     const adjustedPosition = {
-        x: Math.min(position.x, window.innerWidth - 280),
-        y: Math.min(position.y, window.innerHeight - (places.length * 70 + 60)),
+        x: Math.max(12, Math.min(position.x, window.innerWidth - 280)),
+        y: Math.max(68, Math.min(position.y, window.innerHeight - (places.length * 70 + 60))),
     };
 
-    return (
+    return createPortal(
         <>
             <Overlay onClick={onClose} />
             <PanelContainer
@@ -71,7 +72,8 @@ const ClusterSelectionPanel: React.FC<ClusterSelectionPanelProps> = ({
                     ))}
                 </PlaceList>
             </PanelContainer>
-        </>
+        </>,
+        document.body
     );
 };
 
@@ -102,12 +104,12 @@ const Overlay = styled.div`
     right: 0;
     bottom: 0;
     background: transparent;
-    z-index: 150;
+    z-index: 1100;
 `;
 
 const PanelContainer = styled.div<{ $color: string }>`
     position: fixed;
-    z-index: 200;
+    z-index: 1110;
     background: white;
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1);

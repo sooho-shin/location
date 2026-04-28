@@ -1,8 +1,36 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import styled, { keyframes } from "styled-components";
 import { Place } from "./MapComponent";
+import { API_BASE_URL } from "../lib/config";
+
+interface PlaceDetail {
+    id?: string;
+    name?: string;
+    displayName?: { text?: string };
+    formattedAddress?: string;
+    googleMapsUri?: string;
+    websiteUri?: string;
+    nationalPhoneNumber?: string;
+    internationalPhoneNumber?: string;
+    businessStatus?: string;
+    rating?: number;
+    userRatingCount?: number;
+    currentOpeningHours?: {
+        openNow?: boolean;
+        weekdayDescriptions?: string[];
+    };
+    reviews?: Array<{
+        rating?: number;
+        relativePublishTimeDescription?: string;
+        text?: { text?: string };
+        authorAttribution?: {
+            displayName?: string;
+        };
+    }>;
+}
 
 interface PlaceDetailPanelProps {
     place: Place | null;
@@ -24,36 +52,92 @@ const categoryImages: Record<string, string> = {
     default: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80",
 };
 
+function getOpeningStatus(detail: PlaceDetail | null): string | null {
+    if (detail?.currentOpeningHours?.openNow === true) return "영업 중";
+    if (detail?.currentOpeningHours?.openNow === false) return "영업 종료";
+    if (detail?.businessStatus === "CLOSED_PERMANENTLY") return "폐업";
+    if (detail?.businessStatus === "CLOSED_TEMPORARILY") return "임시 휴업";
+    return null;
+}
+
 const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
     place,
     onClose,
     categoryId = "default",
 }) => {
+    const [detail, setDetail] = useState<PlaceDetail | null>(null);
+    const [detailLoading, setDetailLoading] = useState(false);
+    const [detailError, setDetailError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const placeId = place?.placeId || place?.id;
+
+        setDetail(null);
+        setDetailError(null);
+
+        if (!placeId) return;
+
+        const controller = new AbortController();
+        setDetailLoading(true);
+
+        fetch(`${API_BASE_URL}/api/places/${encodeURIComponent(placeId)}`, {
+            signal: controller.signal,
+        })
+            .then(async (response) => {
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data?.details || data?.error || "상세 정보 요청 실패");
+                }
+                setDetail(data);
+            })
+            .catch((error) => {
+                if (error instanceof DOMException && error.name === "AbortError") return;
+                setDetailError(error instanceof Error ? error.message : "상세 정보 요청 실패");
+            })
+            .finally(() => setDetailLoading(false));
+
+        return () => controller.abort();
+    }, [place]);
+
     if (!place) return null;
 
     const theme = categoryThemes[categoryId] || categoryThemes.default;
     const image = categoryImages[categoryId] || categoryImages.default;
+    const displayName = detail?.displayName?.text || place.name;
+    const description = place.description;
+    const address = detail?.formattedAddress || `${place.name} 인근`;
+    const phone = detail?.nationalPhoneNumber || detail?.internationalPhoneNumber;
+    const rating = detail?.rating || place.rating;
+    const reviewCount = detail?.userRatingCount || place.userRatingCount;
+    const googleMapsUri = detail?.googleMapsUri || place.googleMapsUri;
+    const openingStatus = getOpeningStatus(detail);
+    const weekdayDescriptions = detail?.currentOpeningHours?.weekdayDescriptions || [];
 
     const handleNavigation = () => {
-        // 카카오맵 길찾기 열기
-        const url = `https://map.kakao.com/link/to/${place.name},${place.latitude},${place.longitude}`;
+        const url = googleMapsUri || `https://map.kakao.com/link/to/${place.name},${place.latitude},${place.longitude}`;
         window.open(url, "_blank");
     };
 
     const handleShare = () => {
         if (navigator.share) {
             navigator.share({
-                title: place.name,
-                text: place.description,
-                url: window.location.href,
+                title: displayName,
+                text: description,
+                url: googleMapsUri || window.location.href,
             });
         } else {
-            navigator.clipboard.writeText(`${place.name} - ${place.description}`);
+            navigator.clipboard.writeText(`${displayName} - ${description}`);
             alert("클립보드에 복사되었습니다!");
         }
     };
 
-    return (
+    const handleCopyPhone = () => {
+        if (!phone) return;
+        navigator.clipboard.writeText(phone);
+        alert("전화번호가 복사되었습니다!");
+    };
+
+    return createPortal(
         <PanelOverlay onClick={onClose}>
             <PanelContainer onClick={(e) => e.stopPropagation()}>
                 {/* 상단 이미지 영역 */}
@@ -69,12 +153,19 @@ const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
 
                 {/* 장소 정보 헤더 */}
                 <InfoHeader>
-                    <PlaceName>{place.name}</PlaceName>
-                    <PlaceCategory $color={theme.primary}>{place.description}</PlaceCategory>
-                    <ReviewInfo>
-                        <Stars>★★★★★</Stars>
-                        <ReviewCount>방문자 리뷰 12</ReviewCount>
-                    </ReviewInfo>
+                    <PlaceName>{displayName}</PlaceName>
+                    <PlaceCategory $color={theme.primary}>{description}</PlaceCategory>
+                    {(rating || reviewCount) && (
+                        <ReviewInfo>
+                            {rating && <Stars>{"★".repeat(Math.round(rating))}</Stars>}
+                            <ReviewCount>
+                                {rating ? rating.toFixed(1) : ""}
+                                {reviewCount ? ` 방문자 리뷰 ${reviewCount}` : ""}
+                            </ReviewCount>
+                        </ReviewInfo>
+                    )}
+                    {detailLoading && <StatusText>상세 정보를 불러오는 중...</StatusText>}
+                    {detailError && <StatusText>상세 정보를 불러오지 못했습니다.</StatusText>}
                 </InfoHeader>
 
                 {/* 액션 버튼 */}
@@ -115,21 +206,28 @@ const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
                     <DetailItem>
                         <DetailIcon>📍</DetailIcon>
                         <DetailText>
-                            서울시 {place.name} 인근
+                            {address}
                             <DetailSub>지도에서 위치 확인</DetailSub>
                         </DetailText>
                     </DetailItem>
                     <DetailItem>
                         <DetailIcon>🕐</DetailIcon>
                         <DetailText>
-                            <OpenStatus>영업 중</OpenStatus> · 20:00에 영업 종료
+                            {openingStatus ? (
+                                <>
+                                    <OpenStatus $open={openingStatus === "영업 중"}>{openingStatus}</OpenStatus>
+                                    {weekdayDescriptions[0] ? ` · ${weekdayDescriptions[0]}` : ""}
+                                </>
+                            ) : (
+                                "영업시간 정보 없음"
+                            )}
                         </DetailText>
                     </DetailItem>
                     <DetailItem>
                         <DetailIcon>📞</DetailIcon>
                         <DetailText>
-                            02-XXXX-XXXX
-                            <CopyButton>복사</CopyButton>
+                            {phone || "전화번호 정보 없음"}
+                            {phone && <CopyButton onClick={handleCopyPhone}>복사</CopyButton>}
                         </DetailText>
                     </DetailItem>
                     <DetailItem>
@@ -138,14 +236,49 @@ const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
                             {categoryId === "kpop" ? "K-pop 명소" : categoryId === "ramen" ? "라멘 맛집" : "추천 장소"}
                         </DetailText>
                     </DetailItem>
+                    {detail?.websiteUri && (
+                        <DetailItem>
+                            <DetailIcon>↗</DetailIcon>
+                            <DetailText>
+                                <ExternalLink href={detail.websiteUri} target="_blank" rel="noreferrer">
+                                    웹사이트 열기
+                                </ExternalLink>
+                            </DetailText>
+                        </DetailItem>
+                    )}
                 </DetailSection>
 
+                {weekdayDescriptions.length > 1 && (
+                    <HoursSection>
+                        <SectionTitle>영업시간</SectionTitle>
+                        {weekdayDescriptions.map((item) => (
+                            <HoursText key={item}>{item}</HoursText>
+                        ))}
+                    </HoursSection>
+                )}
+
+                {detail?.reviews && detail.reviews.length > 0 && (
+                    <ReviewSection>
+                        <SectionTitle>리뷰</SectionTitle>
+                        {detail.reviews.slice(0, 3).map((review, index) => (
+                            <ReviewItem key={`${review.authorAttribution?.displayName || "review"}-${index}`}>
+                                <ReviewAuthor>{review.authorAttribution?.displayName || "방문자"}</ReviewAuthor>
+                                <ReviewBody>
+                                    {review.rating ? `${"★".repeat(review.rating)} ` : ""}
+                                    {review.text?.text || "리뷰 내용 없음"}
+                                </ReviewBody>
+                            </ReviewItem>
+                        ))}
+                    </ReviewSection>
+                )}
+
                 {/* 더보기 버튼 */}
-                <MoreButton>
+                <MoreButton onClick={handleNavigation}>
                     정보 더보기 〉
                 </MoreButton>
             </PanelContainer>
-        </PanelOverlay>
+        </PanelOverlay>,
+        document.body
     );
 };
 
@@ -176,7 +309,7 @@ const PanelOverlay = styled.div`
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.3);
-  z-index: 300;
+  z-index: 1200;
   animation: ${fadeIn} 0.2s ease-out;
 `;
 
@@ -286,6 +419,12 @@ const Stars = styled.span`
 
 const ReviewCount = styled.span`
   font-size: 13px;
+  color: #888;
+`;
+
+const StatusText = styled.div`
+  margin-top: 8px;
+  font-size: 12px;
   color: #888;
 `;
 
@@ -430,8 +569,8 @@ const DetailSub = styled.span`
   margin-top: 2px;
 `;
 
-const OpenStatus = styled.span`
-  color: #4caf50;
+const OpenStatus = styled.span<{ $open: boolean }>`
+  color: ${(props) => (props.$open ? "#4caf50" : "#f44336")};
   font-weight: 500;
 `;
 
@@ -465,4 +604,56 @@ const MoreButton = styled.button`
   &:hover {
     background: #f0f0f0;
   }
+`;
+
+const ExternalLink = styled.a`
+  color: #2196f3;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const HoursSection = styled.div`
+  padding: 0 20px 16px;
+  border-top: 1px solid #f5f5f5;
+`;
+
+const ReviewSection = styled.div`
+  padding: 0 20px 16px;
+  border-top: 1px solid #f5f5f5;
+`;
+
+const SectionTitle = styled.h3`
+  margin: 16px 0 10px;
+  font-size: 15px;
+  color: #1a1a1a;
+`;
+
+const HoursText = styled.div`
+  font-size: 13px;
+  line-height: 1.6;
+  color: #555;
+`;
+
+const ReviewItem = styled.div`
+  padding: 10px 0;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid #f5f5f5;
+  }
+`;
+
+const ReviewAuthor = styled.div`
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+`;
+
+const ReviewBody = styled.div`
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #666;
 `;
