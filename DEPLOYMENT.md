@@ -4,7 +4,7 @@
 
 - Frontend: Vercel 권장, Root Directory는 `packages/frontend`
 - Backend: Railway, Render, Fly.io, Docker 중 선택
-- 지도: OpenStreetMap + Leaflet 사용, 프론트 지도 API 키 불필요
+- 지도: Google Maps JavaScript API 사용, 프론트 지도 API 키 필요
 - 추천: Gemini 필수, Google Places API는 실제 장소 후보 검색용 선택 기능
 
 ## GitHub Secrets
@@ -17,6 +17,7 @@
 | `VERCEL_ORG_ID` | Vercel 조직 ID |
 | `VERCEL_PROJECT_ID` | Vercel 프로젝트 ID |
 | `NEXT_PUBLIC_API_URL` | 배포된 백엔드 URL |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Google Maps JavaScript API 키 |
 
 ### Backend 배포
 
@@ -33,6 +34,7 @@
 cd packages/frontend
 vercel link
 vercel env add NEXT_PUBLIC_API_URL
+vercel env add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 ```
 
 Vercel Dashboard에서 직접 연결하는 경우:
@@ -42,6 +44,7 @@ Vercel Dashboard에서 직접 연결하는 경우:
 - Output Directory: `.next`
 - Environment Variables:
   - `NEXT_PUBLIC_API_URL=https://your-backend.example.com`
+  - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key`
 
 ## 백엔드 배포
 
@@ -84,6 +87,7 @@ docker run -p 3001:3001 \
 
 ```env
 NEXT_PUBLIC_API_URL=https://your-backend.example.com
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ```
 
 ### Backend
@@ -99,6 +103,7 @@ NODE_ENV=production
 
 - [ ] 백엔드 `/health` 응답 확인
 - [ ] 프론트 `NEXT_PUBLIC_API_URL`이 배포 백엔드 URL인지 확인
+- [ ] 프론트 `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` 설정 확인
 - [ ] 백엔드 CORS가 프론트 도메인 요청을 허용하는지 확인
 - [ ] `GEMINI_API_KEY` 설정 확인
 - [ ] 실제 장소 후보 검색이 필요하면 `GOOGLE_PLACES_API_KEY` 설정 확인

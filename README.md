@@ -63,9 +63,10 @@ location/
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 ```
 
-지도는 OpenStreetMap + Leaflet 기반이라 프론트엔드 지도 API 키가 필요하지 않습니다.
+지도는 Google Maps JavaScript API 기반이라 프론트엔드 지도 키가 필요합니다.
 
 ### Backend
 
