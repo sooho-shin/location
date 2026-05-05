@@ -1,0 +1,13 @@
+interface:
+  display_name: "Location Figma Design"
+  short_description: "Figma design system for LOCATION app."
+  brand_color: "#E94B5F"
+  default_prompt: "Use $location-figma-design to create an atomic Figma design for the LOCATION app."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "figma"
+      description: "Figma MCP server for creating and editing Figma files."
+      transport: "streamable_http"
+      url: "https://mcp.figma.com/mcp"

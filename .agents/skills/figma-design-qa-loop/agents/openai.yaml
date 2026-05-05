@@ -1,0 +1,13 @@
+interface:
+  display_name: "Figma Design QA Loop"
+  short_description: "Repeat QA and fixes for generated Figma designs."
+  brand_color: "#E94B5F"
+  default_prompt: "Use $figma-design-qa-loop to inspect generated Figma pages, fix visible layout issues, and repeat QA until clean."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "figma"
+      description: "Figma MCP server for inspecting and editing Figma files."
+      transport: "streamable_http"
+      url: "https://mcp.figma.com/mcp"
