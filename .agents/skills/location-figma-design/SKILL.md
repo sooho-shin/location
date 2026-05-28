@@ -9,6 +9,8 @@ description: "LOCATION 프로젝트의 Figma 디자인을 기획에서 캔버스
 
 이 스킬은 LOCATION 프로젝트의 기획을 Figma 디자인 시스템과 실제 앱 화면으로 전환할 때 사용한다.
 
+작업 전에 `docs/PRODUCT_SPEC.md`를 확인해 현재 제품 정의, 타겟 사용자, 지도/추천/UI 정책을 기준으로 삼는다. API 데이터나 장소 모델이 화면에 영향을 주면 `docs/API_CONTRACT.md`도 함께 확인한다.
+
 핵심 방향:
 
 - 타겟은 일본인 사용자를 우선한다.

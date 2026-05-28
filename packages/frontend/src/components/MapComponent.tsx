@@ -42,20 +42,30 @@ declare global {
   interface Window {
     google?: typeof google;
     googleMapsApiPromise?: Promise<typeof google.maps>;
+    initLocationGoogleMaps?: () => void;
   }
 }
 
 const loadGoogleMaps = (apiKey: string): Promise<typeof google.maps> => {
-  if (window.google?.maps) {
+  if (typeof window.google?.maps?.Map === "function") {
     return Promise.resolve(window.google.maps);
   }
 
   if (!window.googleMapsApiPromise) {
     window.googleMapsApiPromise = new Promise((resolve, reject) => {
+      window.initLocationGoogleMaps = () => {
+        if (typeof window.google?.maps?.Map !== "function") {
+          reject(new Error("Google Maps API 초기화 실패"));
+          return;
+        }
+
+        resolve(window.google.maps);
+      };
+
       const existingScript = document.querySelector<HTMLScriptElement>('script[data-location-google-maps="true"]');
 
       if (existingScript) {
-        existingScript.addEventListener("load", () => resolve(window.google!.maps));
+        existingScript.addEventListener("load", () => window.initLocationGoogleMaps?.());
         existingScript.addEventListener("error", () => reject(new Error("Google Maps API 로드 실패")));
         return;
       }
@@ -64,8 +74,7 @@ const loadGoogleMaps = (apiKey: string): Promise<typeof google.maps> => {
       script.dataset.locationGoogleMaps = "true";
       script.async = true;
       script.defer = true;
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&loading=async&language=ko&region=KR`;
-      script.onload = () => resolve(window.google!.maps);
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&callback=initLocationGoogleMaps&libraries=marker&language=ko&region=KR`;
       script.onerror = () => reject(new Error("Google Maps API 로드 실패"));
       document.head.appendChild(script);
     });

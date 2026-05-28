@@ -23,11 +23,12 @@ $location-project
 - Yarn workspaces 모노레포 구조.
 - `packages/frontend`의 프론트엔드 작업.
 - `packages/backend`의 백엔드 작업.
-- Next.js, React, TypeScript, styled-components, Leaflet, react-leaflet 사용 방식.
+- Next.js, React, TypeScript, styled-components, Google Maps JavaScript API 사용 방식.
 - Express 백엔드 API 동작.
 - Gemini API와 선택적 Google Places API 동작.
 - 로컬 개발, 빌드, lint, 배포 명령어.
 - 필수 및 선택 환경 변수.
+- `docs/PRODUCT_SPEC.md`, `docs/DEVELOPMENT_GUIDE.md`, `docs/API_CONTRACT.md`, `docs/ROADMAP.md` 기준 문서.
 
 ## Codex가 이 스킬을 써야 하는 경우
 
@@ -37,6 +38,7 @@ $location-project
 - `packages/backend`
 - `README.md`
 - `DEPLOYMENT.md`
+- `docs`
 - 루트 또는 패키지별 `package.json` 파일
 - CI, 배포, 환경 변수, API, 지도, 추천 동작
 

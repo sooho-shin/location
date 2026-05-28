@@ -2,7 +2,7 @@
 
 ## 목적
 
-LOCATION은 사용자의 현재 위치와 선택한 카테고리를 기준으로 한국의 장소를 추천하고, 추천 결과를 Leaflet/OpenStreetMap 지도에 표시한다.
+LOCATION은 사용자의 현재 위치와 선택한 카테고리를 기준으로 한국의 장소를 추천하고, 추천 결과를 Google Maps 지도에 표시한다.
 
 ## 저장소 구조
 
@@ -10,6 +10,10 @@ LOCATION은 사용자의 현재 위치와 선택한 카테고리를 기준으로
 - 워크스페이스: `packages/*`
 - 프론트엔드: `packages/frontend`
 - 백엔드: `packages/backend`
+- 제품 기획 문서: `docs/PRODUCT_SPEC.md`
+- 개발 가이드: `docs/DEVELOPMENT_GUIDE.md`
+- API 계약 문서: `docs/API_CONTRACT.md`
+- 로드맵: `docs/ROADMAP.md`
 - 배포 가이드: `DEPLOYMENT.md`
 
 ## 루트 명령어
@@ -27,6 +31,7 @@ LOCATION은 사용자의 현재 위치와 선택한 카테고리를 기준으로
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 ```
 
 백엔드:
@@ -61,6 +66,6 @@ NODE_ENV=development
 
 - 프론트엔드: Vercel을 사용하고 Root Directory는 `packages/frontend`로 둔다.
 - 백엔드: Railway, Render, Fly.io, Docker 중 하나를 사용할 수 있다.
-- 프론트엔드 배포에는 배포된 백엔드 URL을 가리키는 `NEXT_PUBLIC_API_URL`이 필요하다.
+- 프론트엔드 배포에는 배포된 백엔드 URL을 가리키는 `NEXT_PUBLIC_API_URL`과 Google Maps 키인 `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`가 필요하다.
 - 백엔드 배포에는 `GEMINI_API_KEY`가 필요하고, `GOOGLE_PLACES_API_KEY`는 선택 사항이다.
 - 배포 후 `/health`와 `POST /api/recommend`를 확인한다.

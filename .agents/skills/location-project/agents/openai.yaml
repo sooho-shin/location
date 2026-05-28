@@ -1,4 +1,4 @@
 interface:
   display_name: "Location Project"
-  short_description: "Project-specific workflow rules for the LOCATION monorepo."
-  default_prompt: "Use the location-project skill for this repository."
+  short_description: "LOCATION 모노레포의 기획 문서, 개발 규칙, API/지도/Gemini 연동 기준."
+  default_prompt: "Use $location-project and check docs/PRODUCT_SPEC.md before changing this repository."
