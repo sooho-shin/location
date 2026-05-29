@@ -10,6 +10,14 @@ const defaultZoom = 14;
 const categoryColors: Record<string, string> = {
   kpop: "#FF4081",
   ramen: "#FF9800",
+  cafe: "#795548",
+  "night-view": "#3F51B5",
+  market: "#E53935",
+  "photo-spot": "#00ACC1",
+  "rainy-indoor": "#607D8B",
+  "street-food": "#F4511E",
+  shopping: "#8E24AA",
+  "solo-meal": "#43A047",
   default: "#9C27B0",
 };
 

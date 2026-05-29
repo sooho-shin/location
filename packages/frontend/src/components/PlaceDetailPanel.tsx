@@ -30,6 +30,11 @@ interface PlaceDetail {
             displayName?: string;
         };
     }>;
+    photos?: Array<{
+        name?: string;
+        widthPx?: number;
+        heightPx?: number;
+    }>;
 }
 
 interface PlaceDetailPanelProps {
@@ -42,6 +47,14 @@ interface PlaceDetailPanelProps {
 const categoryThemes: Record<string, { primary: string; light: string }> = {
     kpop: { primary: "#FF4081", light: "#FCE4EC" },
     ramen: { primary: "#FF9800", light: "#FFF3E0" },
+    cafe: { primary: "#795548", light: "#EFEBE9" },
+    "night-view": { primary: "#3F51B5", light: "#E8EAF6" },
+    market: { primary: "#E53935", light: "#FFEBEE" },
+    "photo-spot": { primary: "#00ACC1", light: "#E0F7FA" },
+    "rainy-indoor": { primary: "#607D8B", light: "#ECEFF1" },
+    "street-food": { primary: "#F4511E", light: "#FBE9E7" },
+    shopping: { primary: "#8E24AA", light: "#F3E5F5" },
+    "solo-meal": { primary: "#43A047", light: "#E8F5E9" },
     default: { primary: "#9C27B0", light: "#F3E5F5" },
 };
 
@@ -49,6 +62,14 @@ const categoryThemes: Record<string, { primary: string; light: string }> = {
 const categoryImages: Record<string, string> = {
     kpop: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80",
     ramen: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&q=80",
+    cafe: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800&q=80",
+    "night-view": "https://images.unsplash.com/photo-1538485399081-7191377e8241?w=800&q=80",
+    market: "https://images.unsplash.com/photo-1577401239170-897942555fb3?w=800&q=80",
+    "photo-spot": "https://images.unsplash.com/photo-1548115184-bc6544d06a58?w=800&q=80",
+    "rainy-indoor": "https://images.unsplash.com/photo-1518005020951-eccb494ad742?w=800&q=80",
+    "street-food": "https://images.unsplash.com/photo-1609501676725-7186f017a4b7?w=800&q=80",
+    shopping: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80",
+    "solo-meal": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80",
     default: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80",
 };
 
@@ -58,6 +79,13 @@ function getOpeningStatus(detail: PlaceDetail | null): string | null {
     if (detail?.businessStatus === "CLOSED_PERMANENTLY") return "폐업";
     if (detail?.businessStatus === "CLOSED_TEMPORARILY") return "임시 휴업";
     return null;
+}
+
+function getPlacePhotoUrl(detail: PlaceDetail | null): string | null {
+    const photoName = detail?.photos?.find((photo) => photo.name)?.name;
+    if (!photoName) return null;
+
+    return `${API_BASE_URL}/api/place-photo?name=${encodeURIComponent(photoName)}`;
 }
 
 const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
@@ -102,7 +130,7 @@ const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
     if (!place) return null;
 
     const theme = categoryThemes[categoryId] || categoryThemes.default;
-    const image = categoryImages[categoryId] || categoryImages.default;
+    const image = getPlacePhotoUrl(detail) || categoryImages[categoryId] || categoryImages.default;
     const displayName = detail?.displayName?.text || place.name;
     const description = place.description;
     const address = detail?.formattedAddress || `${place.name} 인근`;

@@ -15,7 +15,9 @@
 - Google Maps JavaScript API 지도 표시
 - Gemini API 기반 추천
 - Google Places API 후보 검색과 상세 조회
+- Google Places Photo 기반 상세 이미지
 - 카테고리 선택 바텀시트
+- 위치/시간 기반 AI 추천 카테고리 버튼
 - 지도 마커와 클러스터 선택
 - 장소 상세 패널
 
@@ -34,9 +36,10 @@
 
 목표: 모바일 사용자가 실제로 탐색하기 좋은 앱으로 다듬는다.
 
-- 바텀시트 상태 확장
+- 바텀시트 상태 확장과 AI 추천 카테고리 품질 개선
 - 추천 결과 목록과 지도 마커 연동 강화
 - 장소 상세 패널 정보 구조 개선
+- Places Photo attribution과 이미지 fallback 품질 개선
 - 클러스터 선택 패널 모바일 위치 보정
 - 카테고리 이미지와 설명 품질 개선
 - 로딩 상태와 skeleton UI 정리

@@ -37,7 +37,7 @@ export default function Home() {
     }
   }, []);
 
-  const handleCategorySelect = useCallback(async (categoryId: string, keyword: string) => {
+  const handleCategorySelect = useCallback(async (categoryId: string, keyword: string, title: string) => {
     if (!userLocation) {
       alert("위치 정보를 가져오는 중입니다. 잠시 후 다시 시도해주세요.");
       return;
@@ -53,7 +53,7 @@ export default function Home() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          category: categoryId === "kpop" ? "케이팝 헌터스" : "한강라면",
+          category: title || categoryId,
           keyword,
           latitude: userLocation.lat,
           longitude: userLocation.lng,
@@ -70,6 +70,9 @@ export default function Home() {
 
       if (data.places && Array.isArray(data.places)) {
         setPlaces(data.places);
+        if (data.places.length === 0) {
+          alert("지금 AI 추천이 혼잡해 결과를 만들지 못했습니다. 잠시 후 다시 시도해주세요.");
+        }
       }
     } catch (error) {
       console.error("장소 추천 오류:", error);
@@ -94,7 +97,7 @@ export default function Home() {
         </LoadingOverlay>
       )}
 
-      <BottomSheet onCategorySelect={handleCategorySelect} />
+      <BottomSheet userLocation={userLocation} onCategorySelect={handleCategorySelect} />
     </Container>
   );
 }

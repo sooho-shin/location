@@ -98,15 +98,19 @@ yarn build:backend
 - 작은 UI 변경도 모바일 화면에서 텍스트 잘림과 겹침을 확인한다.
 - 지도 위 floating UI는 z-index와 클릭 영역을 명확히 한다.
 - 새 카테고리는 이미지, 마커 색상, 검색 키워드를 함께 추가한다.
+- 상세 패널 이미지는 Places Photo 프록시를 우선 사용하고, 실패 시 카테고리 이미지를 fallback으로 둔다.
+- AI 추천 카테고리는 API 실패 시에도 fallback 카테고리로 첫 화면 탐색이 가능해야 한다.
 
 ## 백엔드 원칙
 
 - `/health`, `POST /api/recommend`, `GET /api/places/:placeId` 계약을 임의로 깨지 않는다.
 - `GEMINI_API_KEY`는 추천 설명과 정렬에 사용한다.
 - `GOOGLE_PLACES_API_KEY`는 실제 장소 후보 검색과 상세 정보 조회에 사용한다.
+- Places Photo는 백엔드 프록시 API로 제공해 프론트엔드에 백엔드 키를 노출하지 않는다.
 - `GOOGLE_PLACES_API_KEY`가 없어도 후보 없는 Gemini 단독 추천으로 동작할 수 있어야 한다.
 - Google Places 호출 실패는 전체 추천 실패로 바로 이어지지 않게 fallback을 유지한다.
 - Gemini JSON 파싱 실패 시 후보가 있으면 후보를 반환한다.
+- 카테고리 추천 API는 Gemini 실패 시 서버 fallback 카테고리를 반환한다.
 - API 키 원문을 로그에 남기지 않는다.
 - 사용자 위치 좌표는 요청 처리에 필요한 범위에서만 사용한다.
 

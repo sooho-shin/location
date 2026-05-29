@@ -2,39 +2,107 @@
 
 import React from "react";
 import styled from "styled-components";
+import { API_BASE_URL } from "../lib/config";
 
-// 카테고리 데이터 (장소 카드 스타일)
-const categories = [
+export interface RecommendedCategory {
+  id: string;
+  title: string;
+  subtitle: string;
+  keyword: string;
+  reason?: string;
+  image: string;
+  themeColor?: string;
+  searchRadius?: number;
+  priority?: number;
+}
+
+// API가 실패해도 첫 화면 탐색이 끊기지 않도록 유지하는 기본 카테고리
+const fallbackCategories: RecommendedCategory[] = [
   {
     id: "kpop",
-    name: "케이팝 헌터스",
-    icon: "🎤",
+    title: "케이팝 헌터스",
+    subtitle: "K-pop 명소와 굿즈샵",
     image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&q=80",
-    keyword: "K-pop 관련 명소, 아이돌 연습실, 엔터테인먼트 회사, 굿즈샵"
+    keyword: "K-pop 관련 명소, 아이돌 연습실, 엔터테인먼트 회사, 굿즈샵",
+    themeColor: "#FF4081",
   },
   {
     id: "ramen",
-    name: "한강라면",
-    icon: "🍜",
+    title: "한강라면",
+    subtitle: "한강 편의점과 피크닉",
     image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&q=80",
-    keyword: "한강 공원 편의점, 라면 먹을 수 있는 곳, 한강 피크닉"
+    keyword: "한강 공원 편의점, 라면 먹을 수 있는 곳, 한강 피크닉",
+    themeColor: "#FF9800",
   },
 ];
 
 interface BottomSheetProps {
-  onCategorySelect?: (categoryId: string, keyword: string) => void;
+  userLocation?: { lat: number; lng: number } | null;
+  onCategorySelect?: (categoryId: string, keyword: string, title: string) => void;
 }
 
-const BottomSheet: React.FC<BottomSheetProps> = ({ onCategorySelect }) => {
+const BottomSheet: React.FC<BottomSheetProps> = ({ userLocation, onCategorySelect }) => {
+  const [categories, setCategories] = React.useState<RecommendedCategory[]>(fallbackCategories);
+  const [loading, setLoading] = React.useState(false);
+  const recentSelectedRef = React.useRef<string[]>([]);
 
-  const handleCategoryClick = (category: typeof categories[0]) => {
-    console.log("Category selected:", category.name);
-    onCategorySelect?.(category.id, category.keyword);
+  React.useEffect(() => {
+    if (!userLocation) return;
+
+    const controller = new AbortController();
+    setLoading(true);
+
+    fetch(`${API_BASE_URL}/api/categories/recommend`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        latitude: userLocation.lat,
+        longitude: userLocation.lng,
+        localTime: new Date().toISOString(),
+        language: "ko",
+        userType: "japanese-tourist",
+        recentSelectedCategoryIds: recentSelectedRef.current,
+      }),
+      })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`추천 카테고리 요청 실패 (${response.status})`);
+        }
+
+        const data = await response.json();
+        if (Array.isArray(data.categories) && data.categories.length > 0) {
+          setCategories(data.categories);
+        }
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        console.error("추천 카테고리 오류:", error);
+        setCategories(fallbackCategories);
+      })
+      .finally(() => setLoading(false));
+
+    return () => controller.abort();
+  }, [userLocation]);
+
+  const handleCategoryClick = (category: RecommendedCategory) => {
+    recentSelectedRef.current = [
+      category.id,
+      ...recentSelectedRef.current.filter((id) => id !== category.id),
+    ].slice(0, 4);
+    console.log("Category selected:", category.title);
+    onCategorySelect?.(category.id, category.keyword, category.title);
   };
 
   return (
     <SheetContainer>
       <Handle />
+      <SheetHeader>
+        <SheetTitle>지금 가볼 만한 주제</SheetTitle>
+        {loading && <SheetStatus>추천 중...</SheetStatus>}
+      </SheetHeader>
 
       {/* 카테고리 카드 - 가로 스크롤 */}
       <ScrollContainer>
@@ -46,7 +114,10 @@ const BottomSheet: React.FC<BottomSheetProps> = ({ onCategorySelect }) => {
             >
               <CardImage $image={category.image}>
                 <CardOverlay />
-                <CardLabel>{category.name}</CardLabel>
+                <CardText>
+                  <CardLabel>{category.title}</CardLabel>
+                  <CardSubtitle>{category.subtitle}</CardSubtitle>
+                </CardText>
               </CardImage>
             </CategoryCard>
           ))}
@@ -76,6 +147,28 @@ const Handle = styled.div`
   background: #e0e0e0;
   border-radius: 2px;
   margin: 0 auto 16px;
+`;
+
+const SheetHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px 12px;
+`;
+
+const SheetTitle = styled.h2`
+  margin: 0;
+  font-family: "Pretendard", -apple-system, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f1f1f;
+`;
+
+const SheetStatus = styled.span`
+  font-family: "Pretendard", -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #777777;
 `;
 
 const ScrollContainer = styled.div`
@@ -130,13 +223,32 @@ const CardOverlay = styled.div`
   background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.7) 100%);
 `;
 
-const CardLabel = styled.span`
+const CardText = styled.div`
   position: absolute;
   bottom: 12px;
   left: 12px;
+  right: 12px;
+`;
+
+const CardLabel = styled.span`
+  display: block;
   font-family: "Pretendard", -apple-system, sans-serif;
   font-size: 14px;
   font-weight: 600;
   color: #ffffff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+`;
+
+const CardSubtitle = styled.span`
+  display: block;
+  margin-top: 3px;
+  font-family: "Pretendard", -apple-system, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.86);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
