@@ -36,6 +36,19 @@ const fallbackCategories: RecommendedCategory[] = [
   },
 ];
 
+const KOREA_TIME_ZONE_OFFSET_MINUTES = 9 * 60;
+
+const padDatePart = (value: number): string => String(value).padStart(2, "0");
+
+const getKoreaLocalIsoString = (date = new Date()): string => {
+  const koreaTime = new Date(date.getTime() + KOREA_TIME_ZONE_OFFSET_MINUTES * 60 * 1000);
+
+  return [
+    `${koreaTime.getUTCFullYear()}-${padDatePart(koreaTime.getUTCMonth() + 1)}-${padDatePart(koreaTime.getUTCDate())}`,
+    `${padDatePart(koreaTime.getUTCHours())}:${padDatePart(koreaTime.getUTCMinutes())}:${padDatePart(koreaTime.getUTCSeconds())}+09:00`,
+  ].join("T");
+};
+
 interface BottomSheetProps {
   userLocation?: { lat: number; lng: number } | null;
   onCategorySelect?: (categoryId: string, keyword: string, title: string) => void;
@@ -61,7 +74,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({ userLocation, onCategorySelec
       body: JSON.stringify({
         latitude: userLocation.lat,
         longitude: userLocation.lng,
-        localTime: new Date().toISOString(),
+        localTime: getKoreaLocalIsoString(),
         language: "ko",
         userType: "japanese-tourist",
         recentSelectedCategoryIds: recentSelectedRef.current,

@@ -143,7 +143,10 @@ const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
 
     const handleNavigation = () => {
         const url = googleMapsUri || `https://map.kakao.com/link/to/${place.name},${place.latitude},${place.longitude}`;
-        window.open(url, "_blank");
+        const openedWindow = window.open(url, "_blank", "noopener,noreferrer");
+        if (openedWindow) {
+            openedWindow.opener = null;
+        }
     };
 
     const handleShare = () => {

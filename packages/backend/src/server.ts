@@ -242,7 +242,7 @@ app.post("/api/recommend", async (req: Request, res: Response) => {
     const normalizedCategory = String(category || "추천 장소");
     const normalizedKeyword = String(keyword || normalizedCategory);
 
-    console.log(`Recommendation request: ${normalizedCategory} at (${lat}, ${lng})`);
+    console.log(`Recommendation request: ${normalizedCategory}`);
 
     const candidates = await fetchGooglePlaceCandidates({
       category: normalizedCategory,
@@ -314,12 +314,18 @@ app.get("/api/place-photo", async (req: Request, res: Response) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-  console.log(`Gemini API key: ${process.env.GEMINI_API_KEY ? "configured" : "missing"}`);
-  console.log(`Google Places API key: ${process.env.GOOGLE_PLACES_API_KEY ? "configured" : "missing"}`);
-});
+function startServer() {
+  return app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Health check: http://localhost:${PORT}/health`);
+    console.log(`Gemini API key: ${process.env.GEMINI_API_KEY ? "configured" : "missing"}`);
+    console.log(`Google Places API key: ${process.env.GOOGLE_PLACES_API_KEY ? "configured" : "missing"}`);
+  });
+}
+
+if (require.main === module) {
+  startServer();
+}
 
 async function fetchGooglePlaceCandidates(params: {
   category: string;
@@ -818,6 +824,8 @@ function getFallbackCategories(localTime: string, recentSelectedCategoryIds: str
     .slice(0, CATEGORY_RECOMMENDATION_LIMIT)
     .map((category, index) => ({ ...category, priority: index + 1 }));
 }
+
+export { app, startServer, trimDescription };
 
 function getHour(localTime: string): number {
   const date = new Date(localTime);

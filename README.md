@@ -158,17 +158,30 @@ Google Place Details API를 통해 선택한 장소의 상세 정보를 가져�
 
 ```json
 {
-  "places": [
+  "id": "examplePlaceId",
+  "name": "places/examplePlaceId",
+  "displayName": {
+    "text": "장소 이름"
+  },
+  "formattedAddress": "서울특별시 중구 예시로 1",
+  "googleMapsUri": "https://maps.google.com/...",
+  "websiteUri": "https://example.com",
+  "nationalPhoneNumber": "02-000-0000",
+  "businessStatus": "OPERATIONAL",
+  "rating": 4.5,
+  "userRatingCount": 123,
+  "currentOpeningHours": {
+    "openNow": true,
+    "weekdayDescriptions": ["월요일: 오전 9:00~오후 6:00"]
+  },
+  "photos": [
     {
-      "name": "장소 이름",
-      "description": "추천 설명",
-      "latitude": 37.5665,
-      "longitude": 126.978,
-      "category": "케이팝 헌터스",
-      "source": "google_places"
+      "name": "places/examplePlaceId/photos/examplePhotoName",
+      "widthPx": 1200,
+      "heightPx": 800
     }
   ],
-  "source": "google_places_gemini"
+  "reviews": []
 }
 ```
 
