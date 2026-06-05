@@ -4,6 +4,7 @@ import React from "react";
 import { createPortal } from "react-dom";
 import styled, { keyframes } from "styled-components";
 import { Place } from "./MapComponent";
+import { getMessages, type AppLanguage } from "../lib/i18n";
 
 interface ClusterSelectionPanelProps {
     places: Place[];
@@ -11,6 +12,7 @@ interface ClusterSelectionPanelProps {
     onSelect: (place: Place) => void;
     onClose: () => void;
     categoryId?: string;
+    language: AppLanguage;
 }
 
 // 카테고리별 테마 색상
@@ -26,8 +28,10 @@ const ClusterSelectionPanel: React.FC<ClusterSelectionPanelProps> = ({
     onSelect,
     onClose,
     categoryId = "default",
+    language,
 }) => {
     const theme = categoryThemes[categoryId] || categoryThemes.default;
+    const t = getMessages(language);
 
     // 패널이 화면 밖으로 나가지 않도록 위치 조정
     const adjustedPosition = {
@@ -48,7 +52,7 @@ const ClusterSelectionPanel: React.FC<ClusterSelectionPanelProps> = ({
                 <PanelHeader $color={theme.primary}>
                     <HeaderTitle>
                         <ClusterIcon>📍</ClusterIcon>
-                        {places.length}개 장소
+                        {t.clusterPlaces(places.length)}
                     </HeaderTitle>
                     <CloseButton onClick={onClose}>✕</CloseButton>
                 </PanelHeader>

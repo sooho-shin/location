@@ -121,6 +121,7 @@ Content-Type: application/json
 {
   "category": "케이팝 헌터스",
   "keyword": "K-pop 관련 명소, 아이돌 연습실, 엔터테인먼트 회사, 굿즈샵",
+  "language": "ko",
   "latitude": 37.5665,
   "longitude": 126.978
 }
@@ -132,6 +133,7 @@ Content-Type: application/json
 | --- | --- | --- |
 | `category` | 선택 | 사용자에게 보이는 카테고리 이름. 없으면 `추천 장소`로 처리한다. |
 | `keyword` | 선택 | Google Places와 Gemini 프롬프트에 사용할 검색 키워드. 없으면 category 값을 사용한다. |
+| `language` | 선택 | 응답 설명과 Google Places 검색 언어. `ko`, `en`, `ja`, `zh`, `fr`를 지원하고 기본값은 `ko`다. |
 | `latitude` | 필수 | 사용자 위치 위도 |
 | `longitude` | 필수 | 사용자 위치 경도 |
 
@@ -214,7 +216,7 @@ Content-Type: application/json
 | `latitude` | 필수 | 사용자 위치 위도 |
 | `longitude` | 필수 | 사용자 위치 경도 |
 | `localTime` | 선택 | 사용자의 현지 시간. 없으면 서버 현재 시간을 사용한다. |
-| `language` | 선택 | UI 언어. 기본값은 `ko`다. |
+| `language` | 선택 | UI와 추천 카테고리 언어. `ko`, `en`, `ja`, `zh`, `fr`를 지원하고 기본값은 `ko`다. |
 | `userType` | 선택 | 사용자 유형. 기본값은 `japanese-tourist`다. |
 | `recentSelectedCategoryIds` | 선택 | 최근 선택한 카테고리 ID 배열 |
 
@@ -263,10 +265,16 @@ Google Places 상세 정보를 조회한다.
 요청:
 
 ```http
-GET /api/places/{placeId}
+GET /api/places/{placeId}?language=ko
 ```
 
 `placeId`는 Google Places의 `id` 또는 `places/{id}` 형식을 받을 수 있다.
+
+쿼리 필드:
+
+| 필드 | 필수 | 설명 |
+| --- | --- | --- |
+| `language` | 선택 | Google Places 상세 정보 언어. `ko`, `en`, `ja`, `zh`, `fr`를 지원하고 기본값은 `ko`다. |
 
 성공 응답은 Google Places API 응답 일부를 그대로 따른다.
 

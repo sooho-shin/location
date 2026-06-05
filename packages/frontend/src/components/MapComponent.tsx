@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import PlaceDetailPanel from "./PlaceDetailPanel";
 import ClusterSelectionPanel from "./ClusterSelectionPanel";
+import { getMessages, googleMapsLanguage, type AppLanguage } from "../lib/i18n";
 
 const initialCenter = { lat: 37.5665, lng: 126.978 };
 const defaultZoom = 14;
@@ -44,26 +45,35 @@ interface Cluster {
 interface MapComponentProps {
   places?: Place[];
   categoryId?: string;
+  language: AppLanguage;
 }
 
 declare global {
   interface Window {
     google?: typeof google;
     googleMapsApiPromise?: Promise<typeof google.maps>;
+    googleMapsApiLanguage?: string;
     initLocationGoogleMaps?: () => void;
   }
 }
 
-const loadGoogleMaps = (apiKey: string): Promise<typeof google.maps> => {
-  if (typeof window.google?.maps?.Map === "function") {
+const loadGoogleMaps = (apiKey: string, mapsLanguage: string, messages: ReturnType<typeof getMessages>): Promise<typeof google.maps> => {
+  if (typeof window.google?.maps?.Map === "function" && window.googleMapsApiLanguage === mapsLanguage) {
     return Promise.resolve(window.google.maps);
   }
 
-  if (!window.googleMapsApiPromise) {
+  if (!window.googleMapsApiPromise || window.googleMapsApiLanguage !== mapsLanguage) {
+    const previousScript = document.querySelector<HTMLScriptElement>('script[data-location-google-maps="true"]');
+    if (previousScript && window.googleMapsApiLanguage !== mapsLanguage) {
+      previousScript.remove();
+      window.google = undefined;
+    }
+
+    window.googleMapsApiLanguage = mapsLanguage;
     window.googleMapsApiPromise = new Promise((resolve, reject) => {
       window.initLocationGoogleMaps = () => {
         if (typeof window.google?.maps?.Map !== "function") {
-          reject(new Error("Google Maps API 초기화 실패"));
+          reject(new Error(messages.mapsInitFailed));
           return;
         }
 
@@ -74,7 +84,7 @@ const loadGoogleMaps = (apiKey: string): Promise<typeof google.maps> => {
 
       if (existingScript) {
         existingScript.addEventListener("load", () => window.initLocationGoogleMaps?.());
-        existingScript.addEventListener("error", () => reject(new Error("Google Maps API 로드 실패")));
+        existingScript.addEventListener("error", () => reject(new Error(messages.mapsLoadFailed)));
         return;
       }
 
@@ -82,8 +92,8 @@ const loadGoogleMaps = (apiKey: string): Promise<typeof google.maps> => {
       script.dataset.locationGoogleMaps = "true";
       script.async = true;
       script.defer = true;
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&callback=initLocationGoogleMaps&libraries=marker&language=ko&region=KR`;
-      script.onerror = () => reject(new Error("Google Maps API 로드 실패"));
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&callback=initLocationGoogleMaps&libraries=marker&language=${encodeURIComponent(mapsLanguage)}&region=KR`;
+      script.onerror = () => reject(new Error(messages.mapsLoadFailed));
       document.head.appendChild(script);
     });
   }
@@ -189,7 +199,7 @@ const createClusterIcon = (color: string, selected: boolean): google.maps.Icon =
   labelOrigin: new google.maps.Point(24, 24),
 });
 
-const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "default" }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "default", language }) => {
   const mapRef = useRef<google.maps.Map | null>(null);
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
@@ -207,6 +217,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const markerColor = categoryColors[categoryId] || categoryColors.default;
+  const t = getMessages(language);
+  const mapsLanguage = googleMapsLanguage[language];
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -215,23 +227,25 @@ const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "
           setCenter({ lat: position.coords.latitude, lng: position.coords.longitude });
         },
         () => {
-          console.error("사용자 위치를 가져오지 못했습니다.");
+          console.error(t.waitingForLocation);
         }
       );
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     let cancelled = false;
 
     if (!apiKey) {
-      setMapError("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY가 설정되어 있지 않습니다.");
+      setMapError(t.mapsKeyMissing);
       return;
     }
 
-    loadGoogleMaps(apiKey)
+    loadGoogleMaps(apiKey, mapsLanguage, t)
       .then((maps) => {
-        if (cancelled || !mapElementRef.current || mapRef.current) return;
+        if (cancelled || !mapElementRef.current) return;
+
+        mapRef.current = null;
 
         mapRef.current = new maps.Map(mapElementRef.current, {
           center: initialCenter,
@@ -261,7 +275,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "
     return () => {
       cancelled = true;
     };
-  }, [apiKey]);
+  }, [apiKey, mapsLanguage, t]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
@@ -276,7 +290,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "
         map: mapRef.current,
         position: center,
         icon: createCurrentLocationIcon(),
-        title: "현재 위치",
+        title: t.currentLocation,
         zIndex: 10,
       });
       return;
@@ -399,10 +413,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "
           onSelect={handlePlaceSelect}
           onClose={handleCloseClusterSelection}
           categoryId={categoryId}
+          language={language}
         />
       )}
 
-      <PlaceDetailPanel place={selectedPlace} onClose={handleClosePanel} categoryId={categoryId} />
+      <PlaceDetailPanel place={selectedPlace} onClose={handleClosePanel} categoryId={categoryId} language={language} />
     </>
   );
 };

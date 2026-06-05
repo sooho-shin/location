@@ -7,16 +7,38 @@ import Header from "../components/Header";
 import type { Place } from "../components/MapComponent";
 import BottomSheet from "../components/BottomSheet";
 import { API_BASE_URL } from "../lib/config";
+import { DEFAULT_LANGUAGE, getMessages, isAppLanguage, type AppLanguage } from "../lib/i18n";
 
 const MapComponent = dynamic(() => import("../components/MapComponent"), {
   ssr: false,
 });
+
+const LANGUAGE_STORAGE_KEY = "location-language";
+
+const getSavedLanguage = (): AppLanguage => {
+  const savedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+  if (isAppLanguage(savedLanguage)) return savedLanguage;
+
+  const browserLanguage = window.navigator.language.toLowerCase();
+  if (browserLanguage.startsWith("ja")) return "ja";
+  if (browserLanguage.startsWith("zh")) return "zh";
+  if (browserLanguage.startsWith("fr")) return "fr";
+  if (browserLanguage.startsWith("en")) return "en";
+
+  return DEFAULT_LANGUAGE;
+};
 
 export default function Home() {
   const [places, setPlaces] = useState<Place[]>([]);
   const [currentCategory, setCurrentCategory] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [language, setLanguage] = useState<AppLanguage>(DEFAULT_LANGUAGE);
+  const t = getMessages(language);
+
+  useEffect(() => {
+    setLanguage(getSavedLanguage());
+  }, []);
 
   // 사용자 위치 가져오기
   useEffect(() => {
@@ -37,9 +59,16 @@ export default function Home() {
     }
   }, []);
 
+  const handleLanguageChange = useCallback((nextLanguage: AppLanguage) => {
+    if (nextLanguage === language) return;
+
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage);
+    setLanguage(nextLanguage);
+  }, [language]);
+
   const handleCategorySelect = useCallback(async (categoryId: string, keyword: string, title: string) => {
     if (!userLocation) {
-      alert("위치 정보를 가져오는 중입니다. 잠시 후 다시 시도해주세요.");
+      alert(t.waitingForLocation);
       return;
     }
 
@@ -55,6 +84,7 @@ export default function Home() {
         body: JSON.stringify({
           category: title || categoryId,
           keyword,
+          language,
           latitude: userLocation.lat,
           longitude: userLocation.lng,
         }),
@@ -71,33 +101,33 @@ export default function Home() {
       if (data.places && Array.isArray(data.places)) {
         setPlaces(data.places);
         if (data.places.length === 0) {
-          alert("지금 AI 추천이 혼잡해 결과를 만들지 못했습니다. 잠시 후 다시 시도해주세요.");
+          alert(t.emptyPlaces);
         }
       }
     } catch (error) {
       console.error("장소 추천 오류:", error);
-      alert("장소 추천에 실패했습니다. 다시 시도해주세요.");
+      alert(t.recommendFailed);
     } finally {
       setLoading(false);
     }
-  }, [userLocation]);
+  }, [language, t, userLocation]);
 
   return (
     <Container>
-      <Header />
+      <Header currentLanguage={language} onLanguageChange={handleLanguageChange} />
       <MapWrapper>
-        <MapComponent places={places} categoryId={currentCategory} />
+        <MapComponent places={places} categoryId={currentCategory} language={language} />
       </MapWrapper>
 
       {/* 로딩 오버레이 */}
       {loading && (
         <LoadingOverlay>
           <LoadingSpinner />
-          <LoadingText>AI가 명소를 찾고 있어요...</LoadingText>
+          <LoadingText>{t.loadingPlaces}</LoadingText>
         </LoadingOverlay>
       )}
 
-      <BottomSheet userLocation={userLocation} onCategorySelect={handleCategorySelect} />
+      <BottomSheet userLocation={userLocation} language={language} onCategorySelect={handleCategorySelect} />
     </Container>
   );
 }

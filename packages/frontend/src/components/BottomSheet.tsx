@@ -3,6 +3,7 @@
 import React from "react";
 import styled from "styled-components";
 import { API_BASE_URL } from "../lib/config";
+import { getMessages, type AppLanguage } from "../lib/i18n";
 
 export interface RecommendedCategory {
   id: string;
@@ -15,26 +16,6 @@ export interface RecommendedCategory {
   searchRadius?: number;
   priority?: number;
 }
-
-// API가 실패해도 첫 화면 탐색이 끊기지 않도록 유지하는 기본 카테고리
-const fallbackCategories: RecommendedCategory[] = [
-  {
-    id: "kpop",
-    title: "케이팝 헌터스",
-    subtitle: "K-pop 명소와 굿즈샵",
-    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&q=80",
-    keyword: "K-pop 관련 명소, 아이돌 연습실, 엔터테인먼트 회사, 굿즈샵",
-    themeColor: "#FF4081",
-  },
-  {
-    id: "ramen",
-    title: "한강라면",
-    subtitle: "한강 편의점과 피크닉",
-    image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&q=80",
-    keyword: "한강 공원 편의점, 라면 먹을 수 있는 곳, 한강 피크닉",
-    themeColor: "#FF9800",
-  },
-];
 
 const KOREA_TIME_ZONE_OFFSET_MINUTES = 9 * 60;
 
@@ -51,19 +32,22 @@ const getKoreaLocalIsoString = (date = new Date()): string => {
 
 interface BottomSheetProps {
   userLocation?: { lat: number; lng: number } | null;
+  language: AppLanguage;
   onCategorySelect?: (categoryId: string, keyword: string, title: string) => void;
 }
 
-const BottomSheet: React.FC<BottomSheetProps> = ({ userLocation, onCategorySelect }) => {
-  const [categories, setCategories] = React.useState<RecommendedCategory[]>(fallbackCategories);
+const BottomSheet: React.FC<BottomSheetProps> = ({ userLocation, language, onCategorySelect }) => {
+  const [categories, setCategories] = React.useState<RecommendedCategory[]>([]);
   const [loading, setLoading] = React.useState(false);
   const recentSelectedRef = React.useRef<string[]>([]);
+  const t = getMessages(language);
 
   React.useEffect(() => {
     if (!userLocation) return;
 
     const controller = new AbortController();
     setLoading(true);
+    setCategories([]);
 
     fetch(`${API_BASE_URL}/api/categories/recommend`, {
       method: "POST",
@@ -75,7 +59,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({ userLocation, onCategorySelec
         latitude: userLocation.lat,
         longitude: userLocation.lng,
         localTime: getKoreaLocalIsoString(),
-        language: "ko",
+        language,
         userType: "japanese-tourist",
         recentSelectedCategoryIds: recentSelectedRef.current,
       }),
@@ -93,12 +77,12 @@ const BottomSheet: React.FC<BottomSheetProps> = ({ userLocation, onCategorySelec
       .catch((error) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
         console.error("추천 카테고리 오류:", error);
-        setCategories(fallbackCategories);
+        setCategories([]);
       })
       .finally(() => setLoading(false));
 
     return () => controller.abort();
-  }, [userLocation]);
+  }, [language, userLocation]);
 
   const handleCategoryClick = (category: RecommendedCategory) => {
     recentSelectedRef.current = [
@@ -113,29 +97,33 @@ const BottomSheet: React.FC<BottomSheetProps> = ({ userLocation, onCategorySelec
     <SheetContainer>
       <Handle />
       <SheetHeader>
-        <SheetTitle>지금 가볼 만한 주제</SheetTitle>
-        {loading && <SheetStatus>추천 중...</SheetStatus>}
+        <SheetTitle>{t.sheetTitle}</SheetTitle>
       </SheetHeader>
 
-      {/* 카테고리 카드 - 가로 스크롤 */}
-      <ScrollContainer>
-        <CardsRow>
-          {categories.map((category) => (
-            <CategoryCard
-              key={category.id}
-              onClick={() => handleCategoryClick(category)}
-            >
-              <CardImage $image={category.image}>
-                <CardOverlay />
-                <CardText>
-                  <CardLabel>{category.title}</CardLabel>
-                  <CardSubtitle>{category.subtitle}</CardSubtitle>
-                </CardText>
-              </CardImage>
-            </CategoryCard>
-          ))}
-        </CardsRow>
-      </ScrollContainer>
+      {loading ? (
+        <LoadingArea>
+          <LoadingSpinner aria-label={t.loadingThemes} />
+        </LoadingArea>
+      ) : (
+        <ScrollContainer>
+          <CardsRow>
+            {categories.map((category) => (
+              <CategoryCard
+                key={category.id}
+                onClick={() => handleCategoryClick(category)}
+              >
+                <CardImage $image={category.image}>
+                  <CardOverlay />
+                  <CardText>
+                    <CardLabel>{category.title}</CardLabel>
+                    <CardSubtitle>{category.subtitle}</CardSubtitle>
+                  </CardText>
+                </CardImage>
+              </CategoryCard>
+            ))}
+          </CardsRow>
+        </ScrollContainer>
+      )}
     </SheetContainer>
   );
 };
@@ -177,11 +165,26 @@ const SheetTitle = styled.h2`
   color: #1f1f1f;
 `;
 
-const SheetStatus = styled.span`
-  font-family: "Pretendard", -apple-system, sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  color: #777777;
+const LoadingArea = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+`;
+
+const LoadingSpinner = styled.div`
+  width: 28px;
+  height: 28px;
+  border: 3px solid #eeeeee;
+  border-top-color: #ff5a5f;
+  border-radius: 50%;
+  animation: categorySpin 0.8s linear infinite;
+
+  @keyframes categorySpin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 `;
 
 const ScrollContainer = styled.div`

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import styled, { keyframes } from "styled-components";
 import { Place } from "./MapComponent";
 import { API_BASE_URL } from "../lib/config";
+import { getMessages, type AppLanguage } from "../lib/i18n";
 
 interface PlaceDetail {
     id?: string;
@@ -41,6 +42,7 @@ interface PlaceDetailPanelProps {
     place: Place | null;
     onClose: () => void;
     categoryId?: string;
+    language: AppLanguage;
 }
 
 // 카테고리별 테마 색상
@@ -73,11 +75,11 @@ const categoryImages: Record<string, string> = {
     default: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80",
 };
 
-function getOpeningStatus(detail: PlaceDetail | null): string | null {
-    if (detail?.currentOpeningHours?.openNow === true) return "영업 중";
-    if (detail?.currentOpeningHours?.openNow === false) return "영업 종료";
-    if (detail?.businessStatus === "CLOSED_PERMANENTLY") return "폐업";
-    if (detail?.businessStatus === "CLOSED_TEMPORARILY") return "임시 휴업";
+function getOpeningStatus(detail: PlaceDetail | null, t: ReturnType<typeof getMessages>): string | null {
+    if (detail?.currentOpeningHours?.openNow === true) return t.open;
+    if (detail?.currentOpeningHours?.openNow === false) return t.closed;
+    if (detail?.businessStatus === "CLOSED_PERMANENTLY") return t.permanentlyClosed;
+    if (detail?.businessStatus === "CLOSED_TEMPORARILY") return t.temporarilyClosed;
     return null;
 }
 
@@ -92,10 +94,12 @@ const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
     place,
     onClose,
     categoryId = "default",
+    language,
 }) => {
     const [detail, setDetail] = useState<PlaceDetail | null>(null);
     const [detailLoading, setDetailLoading] = useState(false);
     const [detailError, setDetailError] = useState<string | null>(null);
+    const t = getMessages(language);
 
     useEffect(() => {
         const placeId = place?.placeId || place?.id;
@@ -108,24 +112,24 @@ const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
         const controller = new AbortController();
         setDetailLoading(true);
 
-        fetch(`${API_BASE_URL}/api/places/${encodeURIComponent(placeId)}`, {
+        fetch(`${API_BASE_URL}/api/places/${encodeURIComponent(placeId)}?language=${encodeURIComponent(language)}`, {
             signal: controller.signal,
         })
             .then(async (response) => {
                 const data = await response.json();
                 if (!response.ok) {
-                    throw new Error(data?.details || data?.error || "상세 정보 요청 실패");
+                    throw new Error(data?.details || data?.error || t.detailRequestFailed);
                 }
                 setDetail(data);
             })
             .catch((error) => {
                 if (error instanceof DOMException && error.name === "AbortError") return;
-                setDetailError(error instanceof Error ? error.message : "상세 정보 요청 실패");
+                setDetailError(error instanceof Error ? error.message : t.detailRequestFailed);
             })
             .finally(() => setDetailLoading(false));
 
         return () => controller.abort();
-    }, [place]);
+    }, [language, place, t]);
 
     if (!place) return null;
 
@@ -133,12 +137,12 @@ const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
     const image = getPlacePhotoUrl(detail) || categoryImages[categoryId] || categoryImages.default;
     const displayName = detail?.displayName?.text || place.name;
     const description = place.description;
-    const address = detail?.formattedAddress || `${place.name} 인근`;
+    const address = detail?.formattedAddress || t.nearby(place.name);
     const phone = detail?.nationalPhoneNumber || detail?.internationalPhoneNumber;
     const rating = detail?.rating || place.rating;
     const reviewCount = detail?.userRatingCount || place.userRatingCount;
     const googleMapsUri = detail?.googleMapsUri || place.googleMapsUri;
-    const openingStatus = getOpeningStatus(detail);
+    const openingStatus = getOpeningStatus(detail, t);
     const weekdayDescriptions = detail?.currentOpeningHours?.weekdayDescriptions || [];
 
     const handleNavigation = () => {
@@ -158,14 +162,14 @@ const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
             });
         } else {
             navigator.clipboard.writeText(`${displayName} - ${description}`);
-            alert("클립보드에 복사되었습니다!");
+            alert(t.copied);
         }
     };
 
     const handleCopyPhone = () => {
         if (!phone) return;
         navigator.clipboard.writeText(phone);
-        alert("전화번호가 복사되었습니다!");
+        alert(t.phoneCopied);
     };
 
     return createPortal(
@@ -178,7 +182,7 @@ const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
                         <CloseIcon>✕</CloseIcon>
                     </CloseButton>
                     <StreetViewBadge>
-                        <span>📍 거리뷰</span>
+                        <span>📍 {t.streetView}</span>
                     </StreetViewBadge>
                 </ImageSection>
 
@@ -191,21 +195,21 @@ const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
                             {rating && <Stars>{"★".repeat(Math.round(rating))}</Stars>}
                             <ReviewCount>
                                 {rating ? rating.toFixed(1) : ""}
-                                {reviewCount ? ` 방문자 리뷰 ${reviewCount}` : ""}
+                                {reviewCount ? t.visitorReviews(reviewCount) : ""}
                             </ReviewCount>
                         </ReviewInfo>
                     )}
-                    {detailLoading && <StatusText>상세 정보를 불러오는 중...</StatusText>}
-                    {detailError && <StatusText>상세 정보를 불러오지 못했습니다.</StatusText>}
+                    {detailLoading && <StatusText>{t.detailLoading}</StatusText>}
+                    {detailError && <StatusText>{t.detailFailed}</StatusText>}
                 </InfoHeader>
 
                 {/* 액션 버튼 */}
                 <ActionButtons>
                     <ActionButton $variant="outline" $color={theme.primary}>
-                        출발
+                        {t.start}
                     </ActionButton>
                     <ActionButton $variant="filled" $color={theme.primary} onClick={handleNavigation}>
-                        도착
+                        {t.destination}
                     </ActionButton>
                 </ActionButtons>
 
@@ -213,23 +217,23 @@ const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
                 <QuickActions>
                     <QuickAction>
                         <QuickIcon>☆</QuickIcon>
-                        <QuickLabel>저장</QuickLabel>
+                        <QuickLabel>{t.save}</QuickLabel>
                     </QuickAction>
                     <QuickAction>
                         <QuickIcon>📍</QuickIcon>
-                        <QuickLabel>거리뷰</QuickLabel>
+                        <QuickLabel>{t.streetView}</QuickLabel>
                     </QuickAction>
                     <QuickAction onClick={handleShare}>
                         <QuickIcon>↗</QuickIcon>
-                        <QuickLabel>공유</QuickLabel>
+                        <QuickLabel>{t.share}</QuickLabel>
                     </QuickAction>
                 </QuickActions>
 
                 {/* 탭 메뉴 */}
                 <TabMenu>
-                    <Tab $active>홈</Tab>
-                    <Tab>리뷰</Tab>
-                    <Tab>정보</Tab>
+                    <Tab $active>{t.home}</Tab>
+                    <Tab>{t.reviews}</Tab>
+                    <Tab>{t.info}</Tab>
                 </TabMenu>
 
                 {/* 상세 정보 */}
@@ -238,7 +242,7 @@ const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
                         <DetailIcon>📍</DetailIcon>
                         <DetailText>
                             {address}
-                            <DetailSub>지도에서 위치 확인</DetailSub>
+                            <DetailSub>{t.checkOnMap}</DetailSub>
                         </DetailText>
                     </DetailItem>
                     <DetailItem>
@@ -246,25 +250,25 @@ const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
                         <DetailText>
                             {openingStatus ? (
                                 <>
-                                    <OpenStatus $open={openingStatus === "영업 중"}>{openingStatus}</OpenStatus>
+                                    <OpenStatus $open={openingStatus === t.open}>{openingStatus}</OpenStatus>
                                     {weekdayDescriptions[0] ? ` · ${weekdayDescriptions[0]}` : ""}
                                 </>
                             ) : (
-                                "영업시간 정보 없음"
+                                t.noHours
                             )}
                         </DetailText>
                     </DetailItem>
                     <DetailItem>
                         <DetailIcon>📞</DetailIcon>
                         <DetailText>
-                            {phone || "전화번호 정보 없음"}
-                            {phone && <CopyButton onClick={handleCopyPhone}>복사</CopyButton>}
+                            {phone || t.noPhone}
+                            {phone && <CopyButton onClick={handleCopyPhone}>{t.copy}</CopyButton>}
                         </DetailText>
                     </DetailItem>
                     <DetailItem>
                         <DetailIcon>🏷️</DetailIcon>
                         <DetailText>
-                            {categoryId === "kpop" ? "K-pop 명소" : categoryId === "ramen" ? "라멘 맛집" : "추천 장소"}
+                            {categoryId === "kpop" ? t.categoryKpop : categoryId === "ramen" ? t.categoryRamen : t.recommendedPlace}
                         </DetailText>
                     </DetailItem>
                     {detail?.websiteUri && (
@@ -272,7 +276,7 @@ const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
                             <DetailIcon>↗</DetailIcon>
                             <DetailText>
                                 <ExternalLink href={detail.websiteUri} target="_blank" rel="noreferrer">
-                                    웹사이트 열기
+                                    {t.website}
                                 </ExternalLink>
                             </DetailText>
                         </DetailItem>
@@ -281,7 +285,7 @@ const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
 
                 {weekdayDescriptions.length > 1 && (
                     <HoursSection>
-                        <SectionTitle>영업시간</SectionTitle>
+                        <SectionTitle>{t.hours}</SectionTitle>
                         {weekdayDescriptions.map((item) => (
                             <HoursText key={item}>{item}</HoursText>
                         ))}
@@ -290,13 +294,13 @@ const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
 
                 {detail?.reviews && detail.reviews.length > 0 && (
                     <ReviewSection>
-                        <SectionTitle>리뷰</SectionTitle>
+                        <SectionTitle>{t.reviews}</SectionTitle>
                         {detail.reviews.slice(0, 3).map((review, index) => (
                             <ReviewItem key={`${review.authorAttribution?.displayName || "review"}-${index}`}>
-                                <ReviewAuthor>{review.authorAttribution?.displayName || "방문자"}</ReviewAuthor>
+                                <ReviewAuthor>{review.authorAttribution?.displayName || t.visitor}</ReviewAuthor>
                                 <ReviewBody>
                                     {review.rating ? `${"★".repeat(review.rating)} ` : ""}
-                                    {review.text?.text || "리뷰 내용 없음"}
+                                    {review.text?.text || t.noReviewBody}
                                 </ReviewBody>
                             </ReviewItem>
                         ))}
@@ -305,7 +309,7 @@ const PlaceDetailPanel: React.FC<PlaceDetailPanelProps> = ({
 
                 {/* 더보기 버튼 */}
                 <MoreButton onClick={handleNavigation}>
-                    정보 더보기 〉
+                    {t.moreInfo}
                 </MoreButton>
             </PanelContainer>
         </PanelOverlay>,

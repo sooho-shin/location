@@ -4,21 +4,25 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import Image from "next/image";
 import { KR, US, JP, CN, FR } from "country-flag-icons/react/3x2";
+import { appLanguages, type AppLanguage } from "../lib/i18n";
 
-const languages = [
-    { code: "kr", name: "한국어", Flag: KR },
-    { code: "us", name: "English", Flag: US },
-    { code: "jp", name: "日本語", Flag: JP },
-    { code: "cn", name: "中文", Flag: CN },
-    { code: "fr", name: "Français", Flag: FR },
-];
+const flagByLanguage: Record<AppLanguage, typeof KR> = {
+    ko: KR,
+    en: US,
+    ja: JP,
+    zh: CN,
+    fr: FR,
+};
 
-const Header: React.FC = () => {
-    const [currentLang, setCurrentLang] = useState("kr");
+interface HeaderProps {
+    currentLanguage: AppLanguage;
+    onLanguageChange: (language: AppLanguage) => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ currentLanguage, onLanguageChange }) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-    const currentLanguage = languages.find((l) => l.code === currentLang) || languages[0];
-    const CurrentFlag = currentLanguage.Flag;
+    const CurrentFlag = flagByLanguage[currentLanguage];
 
     return (
         <HeaderContainer>
@@ -34,17 +38,17 @@ const Header: React.FC = () => {
 
                 {isDropdownOpen && (
                     <DropdownMenu>
-                        {languages.map((lang) => {
-                            const FlagComponent = lang.Flag;
+                        {appLanguages.map((lang) => {
+                            const FlagComponent = flagByLanguage[lang.code];
                             return (
                                 <DropdownItem
                                     key={lang.code}
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        setCurrentLang(lang.code);
+                                        onLanguageChange(lang.code);
                                         setIsDropdownOpen(false);
                                     }}
-                                    $isActive={lang.code === currentLang}
+                                    $isActive={lang.code === currentLanguage}
                                 >
                                     <FlagComponent style={{ width: 20, height: 14, borderRadius: 2 }} />
                                     <span>{lang.name}</span>
