@@ -7,7 +7,7 @@
     "dev": "ts-node src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "lint": "tsc --noEmit && eslint . --ext .ts",
+    "lint": "tsc --noEmit",
     "test": "jest"
   },
   "dependencies": {

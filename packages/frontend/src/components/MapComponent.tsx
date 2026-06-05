@@ -208,6 +208,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "
   const [center, setCenter] = useState(initialCenter);
   const [zoom, setZoom] = useState(defaultZoom);
   const [mapReady, setMapReady] = useState(false);
+  const [mapInstanceVersion, setMapInstanceVersion] = useState(0);
   const [mapError, setMapError] = useState<string | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [clusterSelection, setClusterSelection] = useState<{
@@ -241,6 +242,13 @@ const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "
       return;
     }
 
+    setMapReady(false);
+    markersRef.current.forEach((marker) => marker.setMap(null));
+    markersRef.current = [];
+    currentLocationMarkerRef.current?.setMap(null);
+    currentLocationMarkerRef.current = null;
+    appliedLocationRef.current = false;
+
     loadGoogleMaps(apiKey, mapsLanguage, t)
       .then((maps) => {
         if (cancelled || !mapElementRef.current) return;
@@ -264,6 +272,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "
         });
 
         setMapReady(true);
+        setMapInstanceVersion((version) => version + 1);
         setMapError(null);
       })
       .catch((error: Error) => {
@@ -297,7 +306,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "
     }
 
     currentLocationMarkerRef.current.setPosition(center);
-  }, [center, mapReady]);
+  }, [center, mapInstanceVersion, mapReady, t]);
 
   useEffect(() => {
     if (selectedPlace && mapRef.current) {
@@ -372,7 +381,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ places = [], categoryId = "
       markersRef.current.forEach((marker) => marker.setMap(null));
       markersRef.current = [];
     };
-  }, [clusters, mapReady, markerColor, selectedPlace]);
+  }, [clusters, mapInstanceVersion, mapReady, markerColor, selectedPlace]);
 
   const handlePlaceSelect = (place: Place) => {
     setSelectedPlace(place);

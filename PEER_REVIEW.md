@@ -58,3 +58,94 @@
 ### Next Review Angle
 
 - 다음 회차에서는 Google Places fallback 경로, 상세 패널 모바일 레이아웃, 클러스터 패널의 작은 화면 위치 보정, API 에러 메시지 노출 범위를 더 깊게 본다.
+
+## 2026-06-05 18:05 KST - Review 2
+
+### Scope
+
+- 현재 `main` 기준 전체 파일 목록, git 상태, 제품/API/개발/로드맵 문서, 프론트엔드 entrypoint, 지도/바텀시트/상세/클러스터/언어 모듈, 백엔드 API 서버와 검증 스크립트를 다시 점검했다.
+- 이번 회차에서는 최근 다국어 전환 변경 이후의 지도 재초기화, 검증 명령 안정성, 기존 Review 1 지적의 해소 여부를 중점 확인했다.
+
+### Compared With Previous Review Log
+
+- 해소됨: Review 1의 사용자 좌표 로그는 현재 `Recommendation request: ${normalizedCategory}`만 남겨 정확 좌표를 출력하지 않는다.
+- 해소됨: Review 1의 `window.open` 보안 속성은 현재 `noopener,noreferrer`와 `opener = null` 처리가 적용되어 있다.
+- 해소됨: Review 1의 백엔드 테스트 부재는 `packages/backend/src/server.test.ts` 추가로 `yarn workspace backend test --runInBand`가 통과한다.
+- 해소됨: Review 1의 README 상세 API 응답 예시 불일치는 현재 API 계약과 같은 Google Places 상세 객체 형태로 정리되어 있다.
+- 해소됨: Review 1의 추천 카테고리 UTC 전송은 `getKoreaLocalIsoString()`의 `+09:00` 값으로 바뀌었다.
+- 변경됨: Review 1의 프론트 lint 문제는 `next lint` 자체는 제거됐지만, clean 상태에서 `tsc --noEmit`이 `.next/types` 부재에 의존하는 새 문제가 남아 있다.
+
+### Findings
+
+1. 언어 변경으로 Google Maps를 다시 만들 때 기존 마커 ref가 새 지도에 재부착되지 않을 수 있다.
+   - Evidence: `packages/frontend/src/components/MapComponent.tsx:248`-`257`에서 언어 변경 시 `mapRef.current = null` 후 새 `maps.Map`을 만든다. 그러나 현재 위치 마커 effect는 `center`, `mapReady`에만 의존한다(`packages/frontend/src/components/MapComponent.tsx:280`-`300`), 장소 마커 effect도 `clusters`, `mapReady`, `markerColor`, `selectedPlace`에만 의존한다(`packages/frontend/src/components/MapComponent.tsx:313`-`375`). 새 map 인스턴스 생성 후 `mapReady`가 이미 `true`이면 값 변화가 없어 두 effect가 다시 실행되지 않을 수 있다.
+   - Current impact: 사용자가 언어 드롭다운을 바꾼 뒤 지도 스크립트/지도 인스턴스는 바뀌어도 현재 위치 마커와 추천 장소 마커가 기존 지도 인스턴스에 남거나 사라진 상태가 될 수 있다. 다국어 전환 후 지도 탐색 흐름이 깨질 위험이 있다.
+   - Recommended action: 지도 인스턴스 생성 세대값(`mapInstanceVersion`)을 상태로 두고 current-location/places marker effect dependency에 포함하거나, 지도 재생성 직전에 `markersRef`, `currentLocationMarkerRef`, `appliedLocationRef`, `selectedPlace`, `clusterSelection`을 명시적으로 초기화한다.
+
+2. 프론트엔드 lint가 clean 환경에서 build 선행 여부에 의존한다.
+   - Evidence: `packages/frontend/tsconfig.json:26`-`32`가 `.next/types/**/*.ts`와 `.next/dev/types/**/*.ts`를 직접 include한다. 이번 회차에서 `yarn lint`를 먼저 실행했을 때 `.next/types/cache-life.d.ts`, `.next/types/routes.d.ts`, `.next/types/validator.ts`를 찾지 못해 실패했다. 이후 `yarn build:frontend`가 `.next/types`를 생성한 뒤 다시 `yarn lint`를 실행하면 통과했다.
+   - Current impact: 새 클론, CI 캐시 초기화, `.next` 삭제 후에는 `yarn lint` 단독 실행이 실패한다. 검증 순서가 `lint -> build`인 파이프라인에서 불필요한 실패가 발생한다.
+   - Recommended action: lint 스크립트를 `next build` 산출물에 의존하지 않는 타입체크로 조정하거나, Next가 생성하는 타입을 `next typegen && tsc --noEmit`처럼 명시적으로 선행 생성하는 스크립트로 바꾼다.
+
+3. 백엔드 lint 스크립트가 ESLint 설정 부재로 실패한다.
+   - Evidence: `packages/backend/package.json:10`은 `tsc --noEmit && eslint . --ext .ts`를 실행한다. 저장소에는 `packages/backend/.eslintrc*` 또는 `packages/backend/eslint.config.*`가 없고, `yarn workspace backend lint` 실행 결과 ESLint가 configuration file을 찾지 못해 종료 코드 2를 반환했다.
+   - Current impact: 백엔드 변경 시 개발 가이드의 검증 루틴을 확장하려 해도 lint가 항상 실패한다. CI에 백엔드 lint를 추가하면 실제 코드 품질과 무관하게 파이프라인이 깨진다.
+   - Recommended action: 백엔드 ESLint 설정을 추가하거나, 현재 단계에서 lint 목적이 타입체크라면 스크립트를 `tsc --noEmit`으로 축소한다.
+
+### Verification
+
+- `pwd`: `/Users/sinsuho/Desktop/mywork/location`.
+- `git status --short`: 리뷰 문서 수정 전 작업 트리는 깨끗했다.
+- `rg --files`: 프론트엔드, 백엔드, 문서, 배포, 리뷰 문서 목록을 확인했다.
+- `rg -n "TODO|FIXME|any|useEffect|target=\"_blank\"|<img|console\\.|eslint-disable|href=\"#\"|router.push|prefers-reduced-motion|window\\.open|navigator\\.clipboard|alert\\(|localStorage|new Date\\(|Date\\.now|Math\\.random|dangerouslySetInnerHTML" packages docs README.md DEPLOYMENT.md`: 다국어 변경 후 effect, 새 창, clipboard, alert, 시간값, 로그 사용 지점을 점검했다.
+- `yarn lint`: 최초 실행 실패. `.next/types/*` 파일 부재 때문에 TypeScript가 종료 코드 2를 반환했다.
+- `yarn build:frontend`: 성공.
+- `yarn build:backend`: 성공.
+- `yarn workspace backend test --runInBand`: 성공. 2 tests passed.
+- `yarn workspace backend lint`: 실패. ESLint 설정 파일이 없어 종료 코드 2를 반환했다.
+- `yarn lint`: `yarn build:frontend` 이후 재실행 시 성공.
+
+### Next Review Angle
+
+- 다음 회차에서는 언어 변경 후 지도/마커 재생성 경로가 실제 브라우저에서 어떻게 보이는지, 그리고 Gemini/Google Places 다국어 응답이 사용자에게 섞여 보이지 않는지 집중 점검한다.
+
+## 2026-06-05 18:16 KST - Review 3
+
+### Scope
+
+- 3회차 시작 시 현재 변경 파일은 `PEER_REVIEW.md`뿐임을 확인했다.
+- 소스가 2회차 이후 바뀌지 않았으므로 프론트/백엔드 핵심 구조와 검증 명령의 유지 여부를 다시 확인했다.
+
+### Compared With Previous Review Log
+
+- 유지됨: Review 2의 지도 언어 변경 후 마커 재부착 리스크는 관련 코드가 바뀌지 않아 그대로 유효하다.
+- 유지됨: Review 2의 백엔드 lint 실패는 `yarn workspace backend lint`에서 동일하게 재현됐다.
+- 변경 없음: Review 2 이후 소스 파일 변경은 없었고, `git diff --name-only`는 `PEER_REVIEW.md`만 표시했다.
+- 환경 의존 유지: Review 2의 프론트 clean lint 이슈는 이번 회차에서는 `.next/types`가 이미 생성된 상태라 `yarn lint`가 통과했다. 다만 `tsconfig.json`의 `.next/types` 직접 include 구조는 바뀌지 않아 clean 환경 리스크는 이전 기록대로 남는다.
+
+### Findings
+
+1. 언어 변경 후 지도 마커 재부착 리스크가 여전히 남아 있다.
+   - Evidence: Review 2와 동일하게 `packages/frontend/src/components/MapComponent.tsx:248`-`257`은 새 map 인스턴스를 만들지만, 현재 위치 마커 effect는 `center`, `mapReady`만 본다(`packages/frontend/src/components/MapComponent.tsx:280`-`300`). 장소 마커 effect도 새 map 인스턴스 자체를 dependency로 보지 않는다(`packages/frontend/src/components/MapComponent.tsx:313`-`375`).
+   - Current impact: 언어 전환 후 지도는 새로 만들어졌는데 마커들이 새 지도에 다시 붙지 않는 상태가 생길 수 있다.
+   - Recommended action: 지도 인스턴스 세대값을 상태로 관리하고 marker effect dependency에 포함하거나, map 재생성 시 marker 관련 ref를 초기화한다.
+
+2. 백엔드 lint 스크립트가 여전히 ESLint 설정 부재로 실패한다.
+   - Evidence: `packages/backend/package.json:10`의 `lint`는 `tsc --noEmit && eslint . --ext .ts`다. `yarn workspace backend lint`는 이번 회차에도 ESLint configuration file을 찾지 못해 종료 코드 2로 실패했다.
+   - Current impact: 백엔드 lint를 개발/CI 검증 루틴에 넣을 수 없다.
+   - Recommended action: 백엔드 ESLint 설정을 추가하거나, 의도한 검증이 타입체크라면 스크립트를 `tsc --noEmit`으로 정리한다.
+
+### Verification
+
+- `git status --short`: `PEER_REVIEW.md`만 수정 상태.
+- `rg --files`: 파일 목록 재확인.
+- `git diff --name-only`: `PEER_REVIEW.md`만 표시.
+- `yarn lint`: 성공. 단, `.next/types`가 이미 생성된 상태에서의 성공이다.
+- `yarn build:frontend`: 성공.
+- `yarn build:backend`: 성공.
+- `yarn workspace backend test --runInBand`: 성공. 2 tests passed.
+- `yarn workspace backend lint`: 실패. ESLint 설정 파일 부재로 종료 코드 2.
+
+### Next Review Angle
+
+- 다음 회차에서는 실제 브라우저 실행 없이도 검증 가능한 수준에서 지도 인스턴스 재생성 후 marker effect dependency를 더 엄밀히 추적하고, `.next/types` 의존 lint 문제를 clean 환경 기준으로 재현 가능하게 문서화할 방법을 확인한다.
